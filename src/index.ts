@@ -1,20 +1,5 @@
-import { getUserInputs } from './utils/input';
-
-import { 
-    EVENTS, 
-    getChatActions, 
-    initUsers, 
-    ParticipantDetails, 
-    registerUser, 
-    UserWithIndex, 
-    MessageData,
-    orderMessages,
-    startMessageFetchProcess,
-    startUserFetchProcess,
-    stopMessageFetchProcess,
-    stopUserFetchProcess
-} from './libs/chat/';
-
+import { getUserInputs } from './utils/input.js';
+import { startChatTest } from './tests/chat.js';
 
 
 const main = () => {
@@ -22,10 +7,7 @@ const main = () => {
     
     const inputs = getUserInputs();
   
-    console.log("\nStarting simulation with the following parameters:");
-    console.log(inputs);
+    startChatTest(inputs);
+};
   
-    // Further logic to simulate based on inputs...
-  };
-  
-  main();
+main();
