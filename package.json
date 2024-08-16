@@ -6,7 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "dev": "tsc && node dist/index.js"
   },
   "dependencies": {
     "@ethersphere/bee-js": "^6.9.1",

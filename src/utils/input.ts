@@ -16,7 +16,7 @@ export function getUserInputs() {
     console.log(`User Count: ${userCount}`);
     console.log(`Message Frequency: ${messageFrequency} milliseconds`);
     console.log(`Registration Interval: ${registrationInterval} milliseconds`);
-    console.log(`Total message count: ${totalMessageCount}`);
+    console.log(`Total message count (per user): ${totalMessageCount}`);
   
     return {
         userCount,
