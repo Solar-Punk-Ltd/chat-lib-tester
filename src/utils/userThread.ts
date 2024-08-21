@@ -1,6 +1,6 @@
 import { parentPort, workerData } from 'node:worker_threads';
 import { EthAddress, isRegistered, MessageData, registerUser, sendMessage, startUserFetchProcess, stopUserFetchProcess } from 'swarm-decentralized-chat';
-import { sleep } from './misc.js';
+import { generateID, sleep } from './misc.js';
 import { UserThreadMessages } from '../types/types.js';
 
 if (!parentPort) throw "Parent Port is null";
@@ -46,7 +46,11 @@ for (let i = 0; i < params.totalMessageCount; i++) {
         stamp,
         privateKey
     );
-    parentPort.postMessage(UserThreadMessages.INCREMENT_TOTAL_MESSAGE_COUNT)
+    parentPort.postMessage({
+        type: UserThreadMessages.INCREMENT_TOTAL_MESSAGE_COUNT,
+        id: generateID(messageObj),
+        timestamp
+    });
     await sleep(params.messageFrequency);
 }
 
