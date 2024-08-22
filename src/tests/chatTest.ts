@@ -22,6 +22,8 @@ const nodeList: NodeListElement[] = [
 let messages: MessageData[] = [];
 let messageAnalyitics: MessageInfo = {};
 let userAnalytics: UserInfo = {};
+let startTime = 0;
+let intervalId: NodeJS.Timeout | null = null;                          // Interval to check whether the process is finished or not (if not all messages can be sent)
 let totalSentCount = 0;
 const transmitAvg: RunningAverage = new RunningAverage(1000);
 
@@ -41,8 +43,9 @@ export async function startChatTest(params: TestParams) {
     console.info("Creating chat room...");
     setBeeUrl(nodeList[0].url);
     initChatRoom(topic, nodeList[0].stamp);
+    startTime = Date.now();
     console.info("Done!");
-    await sleep(5000);
+    await sleep(params.registrationInterval);
 
     // This user (on the main thread), will only read messages, and create stats based on that
     startUserFetchProcess(topic);
@@ -54,11 +57,15 @@ export async function startChatTest(params: TestParams) {
     });
 
     on(EVENTS.USER_REGISTERED, handleUserRegistered);
+
+    intervalId = setInterval(() => {
+        const isDone = determineDone(params);
+        if (isDone) done(userThreadList);
+    }, 15 * 1000);
     
     // This are the users, who are registering, and writing messages, each has a separate Worker thread
     console.info("Registering users...");
     for (let i = 0; i < walletList.length; i++) {
-        console.log("ENTERED LOOP, i is: ", i)
         const nodeIndex = i % nodeList.length;      // This will cycle through nodeList indices
         const userThread = new Worker(path.resolve(__dirname, '../utils/userThread.js'), {
             workerData: {
@@ -70,6 +77,8 @@ export async function startChatTest(params: TestParams) {
                 stamp: nodeList[nodeIndex].stamp,
                 username: `user-${i}`
             },
+            stdout: false,
+            stderr: false
         });
 
         userThread.on("message", (messageFromThread) => {
@@ -90,6 +99,7 @@ export async function startChatTest(params: TestParams) {
                         reconnectTimes: [],
                         reconnectCount: 0
                     }
+
                     break;
 
                 case UserThreadMessages.USER_RECONNECTED:
@@ -124,11 +134,17 @@ async function handleMessageReceive(newMessages: MessageData[], params: TestPara
     } else {
         messageAnalyitics[id].received = Date.now();
     }
-    const time = messageAnalyitics[id].received - messageAnalyitics[id].sent;
-    transmitAvg.addValue(time);
     console.info("New message: ", newMessages[i]);
     console.info("User count: ", getUserCount());
-    console.info(`Transmission time: ${time} ms. Average: ${Math.ceil(transmitAvg.getAverage()/1000)} s`);
+    if (messageAnalyitics[id].received < 1600000000000 || messageAnalyitics[id].sent < 1600000000000) {
+        console.warn("WARNING! ANOMALY, received or sent is not correct timestamp");
+        console.log("Received: ", messageAnalyitics[id].received);
+        console.log("Sent: ", messageAnalyitics[id].sent);
+    } else {
+        const time = messageAnalyitics[id].received - messageAnalyitics[id].sent;
+        transmitAvg.addValue(time);
+        console.info(`Transmission time: ${time} ms. Average: ${Math.ceil(transmitAvg.getAverage()/1000)} s`);
+    }
 
 
     const uniqueNewMessages = newMessages.filter(
@@ -138,18 +154,7 @@ async function handleMessageReceive(newMessages: MessageData[], params: TestPara
 
     console.info("TOTAL RECEIVED / TOTAL SENT: ", `${messages.length} / ${totalSentCount}`);
 
-    if (determineDone(params)) {
-        await sleep(10000);
-        
-        for (let k = 0; k < userThreadList.length; k++) {
-            (await userThreadList[k]).terminate();
-        }
-        stopMessageFetchProcess();
-        stopUserFetchProcess();
-        await sleep(1000);
-
-        summary();
-    }
+    if (determineDone(params)) done(userThreadList);
 };
 
 function handleUserRegistered(username: string) {
@@ -167,6 +172,17 @@ function handleUserRegistered(username: string) {
 
 function determineDone(params: TestParams) {
     const total = params.userCount * params.totalMessageCount;
+    const currentTime = Date.now();
+
+    const totalRegistrationTime = (params.userCount - 1) * params.registrationInterval;
+    const totalMessageTimePerUser = (params.totalMessageCount - 1) * params.messageFrequency;
+    const totalExpectedTime = totalRegistrationTime + totalMessageTimePerUser;
+    console.log(`Time left:  ${Math.floor(((startTime + totalExpectedTime + 120 * 1000) - currentTime)/1000)} s`)
+
+    if (currentTime > startTime + totalExpectedTime + 120 * 1000) {
+        return true;        // Process is running for more than expected time + 2 minutes
+    }
+
     return Object.keys(messageAnalyitics).length === total;
 }
 
@@ -193,11 +209,25 @@ function summary() {
     }
     console.info(`Registration time on average:  ${Math.floor(regTimeAvg.getAverage()/1000)} `);
     console.info("Reconnect count on average: ", reconnectCountAvg.getAverage());
-    console.info(`Registration failed ${registrationFailedCount} times`);
+    console.info(`Registration failed for ${registrationFailedCount} users`);
 
     console.info("\n")
 }
 
 function calcTimeDiff(start: number, end: number) {
     return end-start;
+}
+
+async function done(userThreadList: Worker[]) {
+    if (intervalId) clearInterval(intervalId);
+    await sleep(Math.floor(transmitAvg.getAverage()*1.2));
+        
+    for (let k = 0; k < userThreadList.length; k++) {
+        (await userThreadList[k]).terminate();
+    }
+    stopMessageFetchProcess();
+    stopUserFetchProcess();
+    await sleep(1000);
+
+    summary();
 }
