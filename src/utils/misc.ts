@@ -1,4 +1,5 @@
 import { MessageData } from "swarm-decentralized-chat";
+import { MessageInfo, TestParams } from "../types/types.js";
 
 // General sleep function, usage: await sleep(ms)
 export function sleep(delay: number) {
@@ -7,10 +8,12 @@ export function sleep(delay: number) {
     });
 }
 
+// Each message has an ID
 export function generateID(message: MessageData): string {
     return message.address + message.timestamp;
 }
 
+// A class for handling averages, constructor accepts a max value (array length)
 export class RunningAverage {
     private maxSize: number;
     private values: number[];
@@ -44,4 +47,21 @@ export class RunningAverage {
 
 export function calcTimeDiff(start: number, end: number) {
     return end-start;
+}
+
+// Determine if the test is finished or not
+export function determineDone(params: TestParams, startTime: number, messageAnalyitics: MessageInfo) {
+    const total = params.userCount * params.totalMessageCount;
+    const currentTime = Date.now();
+
+    const totalRegistrationTime = (params.userCount - 1) * params.registrationInterval;
+    const totalMessageTimePerUser = (params.totalMessageCount - 1) * params.messageFrequency;
+    const totalExpectedTime = totalRegistrationTime + totalMessageTimePerUser;
+    console.log(`Time left (max):  ${Math.floor(((startTime + totalExpectedTime + 120 * 1000) - currentTime)/1000)} s`)
+
+    if (currentTime > startTime + totalExpectedTime + 120 * 1000) {
+        return true;        // Process is running for more than expected time + 2 minutes
+    }
+
+    return Object.keys(messageAnalyitics).length === total;
 }

@@ -1,4 +1,5 @@
 import { parentPort, workerData } from 'node:worker_threads';
+
 import { 
     EthAddress, 
     isRegistered, 
@@ -12,16 +13,16 @@ import {
     EVENTS,
     startMessageFetchProcess
 } from 'swarm-decentralized-chat';
-import { generateID, sleep 
-    
-} from './misc.js';
+
+import { generateID, sleep } from './misc.js';
 import { UserThreadMessages } from '../types/types.js';
+
 
 if (!parentPort) throw "Parent Port is null";
 
 const { topic, params, address, privateKey, node, stamp, username } = workerData;
 
-const { on, off } = getChatActions();
+const { on } = getChatActions();
 
 on(EVENTS.FEED_COMMIT_HASH, (hash) => {
     parentPort?.postMessage({
@@ -43,7 +44,7 @@ await registerUser(topic, {
     stamp: stamp,
     nickName: username
 });
-parentPort.postMessage({
+parentPort.postMessage({                                                                // Signal to main thread that registration started
     type: UserThreadMessages.USER_REGISTERED,
     username,
     timestamp: Date.now()
@@ -62,7 +63,7 @@ for (let i = 0; i < params.totalMessageCount; i++) {
                 stamp: stamp,
                 nickName: username
             });
-            parentPort.postMessage({
+            parentPort.postMessage({                                                    // Signal to main thread that reconnect is happening
                 type: UserThreadMessages.USER_RECONNECTED,
                 username,
                 timestamp: Date.now()
@@ -71,21 +72,21 @@ for (let i = 0; i < params.totalMessageCount; i++) {
     }
 
     const timestamp = Date.now();
-    const messageText = `Message from ${address} at ${new Date().toISOString()}`;
+    const messageText = `Message from ${address} at ${new Date().toISOString()}`;       // Prepare message object
     const messageObj: MessageData = {
         message: messageText,
         username,
         address,
         timestamp
     };
-    await sendMessage(
+    await sendMessage(                                                                  // Upload message to our own feed
         address,
         topic,
         messageObj,
         stamp,
         privateKey
     );
-    parentPort.postMessage({
+    parentPort.postMessage({                                                            // Signal to main thread that a message was sent
         type: UserThreadMessages.INCREMENT_TOTAL_MESSAGE_COUNT,
         id: generateID(messageObj),
         timestamp

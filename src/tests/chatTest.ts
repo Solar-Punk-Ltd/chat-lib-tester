@@ -1,16 +1,30 @@
 import { Worker } from 'node:worker_threads';
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { BatchId } from '@ethersphere/bee-js';
 import { ethers } from 'ethers';
+
+import { 
+    initChatRoom,
+    startMessageFetchProcess,
+    getChatActions,
+    orderMessages,
+    MessageData,
+    EVENTS,
+    startUserFetchProcess,
+    setBeeUrl,
+    getUserCount,
+    stopMessageFetchProcess,
+    stopUserFetchProcess
+} from 'swarm-decentralized-chat';
+
 import { FeedCommitHashList, MessageInfo, NodeListElement, TestParams, UserInfo, UserThreadMessages } from '../types/types.js';
-import { generateID, sleep, RunningAverage, calcTimeDiff } from '../utils/misc.js';
+import { generateID, sleep, RunningAverage, determineDone } from '../utils/misc.js';
+import { summary, writeNodeInfoToFile } from '../utils/info.js';
 
-const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
-const __dirname = path.dirname(__filename); // get the name of the directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-import { initChatRoom, startMessageFetchProcess, getChatActions, orderMessages, MessageData, EVENTS, startUserFetchProcess, setBeeUrl, getUserCount, stopMessageFetchProcess, stopUserFetchProcess } from 'swarm-decentralized-chat';
 
 // List of Bee nodes, with stamp
 const nodeList: NodeListElement[] = [
@@ -28,13 +42,17 @@ let intervalId: NodeJS.Timeout | null = null;                          // Interv
 let totalSentCount = 0;
 let feedCommitHashList: FeedCommitHashList = {};
 const transmitAvg: RunningAverage = new RunningAverage(1000);
+let messageIdAnomaly = 0;
+let timestampAnomaly = 0;
+let isDone = false;
 
 
+// The main chat test, currently this is the only one, but probably there will be more
 export async function startChatTest(params: TestParams) {
     const topic = `Chat-Library-Test-${Math.floor(Math.random() * 10000)}`;
     const userThreadList: Worker[] = [];
 
-    writeNodeInfoToFile(params.filename);
+    writeNodeInfoToFile(params.filename, nodeList);
 
     // Generate a list of private keys, each associated to a user
     const walletList = [];
@@ -48,7 +66,7 @@ export async function startChatTest(params: TestParams) {
     setBeeUrl(nodeList[0].url);
     initChatRoom(topic, nodeList[0].stamp);
     startTime = Date.now();
-    console.info("Done!\n");
+    console.info(`Done! Now will wait ${params.registrationInterval} ms before starting registration. \n`);
     await sleep(params.registrationInterval);
 
     // This user (on the main thread), will only read messages, and create stats based on that
@@ -56,15 +74,16 @@ export async function startChatTest(params: TestParams) {
     startMessageFetchProcess(topic);
     const { on } = getChatActions();
 
+    // Some analytics is happening in handle-functions
     on(EVENTS.RECEIVE_MESSAGE, async (newMessages: MessageData[]) => {
         handleMessageReceive(newMessages, params, userThreadList);
     });
-
     on(EVENTS.USER_REGISTERED, handleUserRegistered);
 
+    // Stop the test process on timeout as well, not just if all messages were sent
     intervalId = setInterval(() => {
-        const isDone = determineDone(params);
-        if (isDone) done(userThreadList, params.filename);
+        if (determineDone(params, startTime, messageAnalyitics))
+            done(userThreadList, params.filename);
     }, 15 * 1000);
     
     // This are the users, who are registering, and writing messages, each has a separate Worker thread
@@ -85,50 +104,8 @@ export async function startChatTest(params: TestParams) {
             stderr: false
         });
 
-        userThread.on("message", (messageFromThread) => {
-            switch (messageFromThread.type) {
-                case UserThreadMessages.INCREMENT_TOTAL_MESSAGE_COUNT:
-                    messageAnalyitics[messageFromThread.id] = {
-                        sent: messageFromThread.timestamp,
-                        received: 0
-                    }
-                    totalSentCount++;
-
-                    break;
-
-                case UserThreadMessages.USER_REGISTERED:
-                    userAnalytics[messageFromThread.username] = {
-                        registrationStarted: messageFromThread.timestamp,
-                        registrationSuccess: 0,
-                        reconnectTimes: [],
-                        reconnectCount: 0
-                    }
-
-                    break;
-
-                case UserThreadMessages.USER_RECONNECTED:
-                    userAnalytics[messageFromThread.username].reconnectTimes.push(messageFromThread.timestamp);
-                    userAnalytics[messageFromThread.username].reconnectCount++;
-
-                    break;
-
-                case UserThreadMessages.HASH_RECEIVED:
-                    if (feedCommitHashList[messageFromThread.hash]) {
-                        feedCommitHashList[messageFromThread.hash].count++;
-                    } else {
-                        feedCommitHashList[messageFromThread.hash] = {
-                            count: 1
-                        }
-                    }
-                    console.log("Hash list with counts: ");
-                    Object.keys(feedCommitHashList).forEach((key) => console.log(`${key}: ${feedCommitHashList[key].count}`));
-
-                    break;
-
-                default:
-                    console.warn("Received message from user threa, that does not have a known label.");
-            }
-        });
+        // Handle the messages (notifications) that are coming from Worker threads
+        handleUserThreadEvent(userThread);
         
         if (i < walletList.length-1) console.info(`Waiting ${params.registrationInterval} ms until next user registration...`); 
         await sleep(params.registrationInterval);
@@ -139,6 +116,8 @@ export async function startChatTest(params: TestParams) {
 async function handleMessageReceive(newMessages: MessageData[], params: TestParams, userThreadList: Worker[]) {
     const i = newMessages.length-1;
     const id = generateID(newMessages[i]);
+
+    // Take note when the message was received. If message ID can't be found, that's an error.
     if (!messageAnalyitics[id]) {
         console.warn("WARNING! MESSAGE COULD NOT BE FOUND, THIS IS AN ANOMALY!");
         console.log("It seems like message was received before it was sent, or the ID is wrong.");
@@ -148,15 +127,20 @@ async function handleMessageReceive(newMessages: MessageData[], params: TestPara
             received: Date.now()
         }
         messageAnalyitics[id].received = Date.now();
+        messageIdAnomaly++;
     } else {
         messageAnalyitics[id].received = Date.now();
     }
+
     console.info("New message: ", newMessages[i]);
     console.info("User count: ", getUserCount());
+
+    // Calculate transmission time. If some of the values does not look like a timestamp, that's an error.
     if (messageAnalyitics[id].received < 1600000000000 || messageAnalyitics[id].sent < 1600000000000) {
         console.warn("WARNING! ANOMALY, received or sent is not correct timestamp");
         console.log("Received: ", messageAnalyitics[id].received);
         console.log("Sent: ", messageAnalyitics[id].sent);
+        timestampAnomaly++;
     } else {
         const time = messageAnalyitics[id].received - messageAnalyitics[id].sent;
         transmitAvg.addValue(time);
@@ -171,7 +155,8 @@ async function handleMessageReceive(newMessages: MessageData[], params: TestPara
 
     console.info("TOTAL RECEIVED / TOTAL SENT: ", `${messages.length} / ${totalSentCount}`);
 
-    if (determineDone(params)) done(userThreadList, params.filename);
+    if (determineDone(params, startTime, messageAnalyitics)) 
+        done(userThreadList, params.filename);
 };
 
 function handleUserRegistered(username: string) {
@@ -184,82 +169,81 @@ function handleUserRegistered(username: string) {
     }
 }
 
-function determineDone(params: TestParams) {
-    const total = params.userCount * params.totalMessageCount;
-    const currentTime = Date.now();
+function handleUserThreadEvent(userThread: Worker) {
+    userThread.on("message", (messageFromThread) => {
+        switch (messageFromThread.type) {
+            case UserThreadMessages.INCREMENT_TOTAL_MESSAGE_COUNT:
+                messageAnalyitics[messageFromThread.id] = {
+                    sent: messageFromThread.timestamp,
+                    received: 0
+                }
+                totalSentCount++;
 
-    const totalRegistrationTime = (params.userCount - 1) * params.registrationInterval;
-    const totalMessageTimePerUser = (params.totalMessageCount - 1) * params.messageFrequency;
-    const totalExpectedTime = totalRegistrationTime + totalMessageTimePerUser;
-    console.log(`Time left (max):  ${Math.floor(((startTime + totalExpectedTime + 120 * 1000) - currentTime)/1000)} s`)
+                break;
 
-    if (currentTime > startTime + totalExpectedTime + 120 * 1000) {
-        return true;        // Process is running for more than expected time + 2 minutes
-    }
+            case UserThreadMessages.USER_REGISTERED:
+                userAnalytics[messageFromThread.username] = {
+                    registrationStarted: messageFromThread.timestamp,
+                    registrationSuccess: 0,
+                    reconnectTimes: [],
+                    reconnectCount: 0
+                }
 
-    return Object.keys(messageAnalyitics).length === total;
-}
+                break;
 
-function summary(filename: string) {
-    const regTimeAvg = new RunningAverage(1000);
-    const reconnectCountAvg = new RunningAverage(1000);
-    let registrationFailedCount = 0;
+            case UserThreadMessages.USER_RECONNECTED:
+                userAnalytics[messageFromThread.username].reconnectTimes.push(messageFromThread.timestamp);
+                userAnalytics[messageFromThread.username].reconnectCount++;
 
-    let summaryContent = "\n\n";
-    summaryContent += "--- Test Summary ---\n\n";
+                break;
 
-    summaryContent += `-- Message Stats --`
-    summaryContent += `Average transmission time: ${Math.ceil(transmitAvg.getAverage()/1000)} s\n`;
-    summaryContent += `TOTAL RECEIVED / TOTAL SENT: ${messages.length} / ${totalSentCount}\n\n`;
+            case UserThreadMessages.HASH_RECEIVED:
+                if (feedCommitHashList[messageFromThread.hash]) {
+                    feedCommitHashList[messageFromThread.hash].count++;
+                } else {
+                    feedCommitHashList[messageFromThread.hash] = {
+                        count: 1
+                    }
+                }
+                console.log("Hash list with counts: ");
+                Object.keys(feedCommitHashList).forEach((key) => console.log(`${key}: ${feedCommitHashList[key].count}`));
 
-    summaryContent += "-- User Stats --\n";
-    for (const [username, stats] of Object.entries(userAnalytics)) {
-        const diff = calcTimeDiff(stats.registrationStarted, stats.registrationSuccess);
-        if (diff < 0) registrationFailedCount++;
-        else regTimeAvg.addValue(diff);
-        reconnectCountAvg.addValue(stats.reconnectCount);
-        summaryContent += `${username} registered in ${diff} ms. Reconnect count: ${stats.reconnectCount}\n`;
-    }
-    summaryContent += `Registration time on average: ${Math.floor(regTimeAvg.getAverage()/1000)} s\n`;
-    summaryContent += `Reconnect count on average: ${reconnectCountAvg.getAverage()}\n`;
-    summaryContent += `Registration failed for ${registrationFailedCount} users\n`;
+                break;
 
-    summaryContent += "\n";
-
-    const reportsDir = './reports';
-    const filePath = path.join(reportsDir, filename);
-    fs.appendFileSync(filePath, summaryContent);
-
-    console.info(summaryContent);
+            default:
+                console.warn("Received message from user threa, that does not have a known label.");
+        }
+    });
 }
 
 async function done(userThreadList: Worker[], filename: string) {
+    // Stop the timeout interval
     if (intervalId) clearInterval(intervalId);
+    else return;
+    
+    // A handleMessage function might be still running
+    if (isDone) return;
+    isDone = true;
+
+    // Wait for last messages
     await sleep(Math.floor(transmitAvg.getAverage()*1.2));
         
+    // Terminate all threads
     for (let k = 0; k < userThreadList.length; k++) {
         (await userThreadList[k]).terminate();
     }
+
     stopMessageFetchProcess();
     stopUserFetchProcess();
     await sleep(1000);
 
-    summary(filename);
-}
-
-function writeNodeInfoToFile(filename: string) {
-    const reportsDir = './reports';
-    const filePath = path.join(reportsDir, filename);
-
-    let nodeSummary = "\n\n--- Node List ---\n";
-
-    nodeList.forEach(node => {
-        nodeSummary += `URL: ${node.url}, Stamp: ${node.stamp}\n`;
-    });
-
-    nodeSummary += `\nTotal node count: ${nodeList.length}\n`;
-
-    fs.appendFileSync(filePath, nodeSummary);
-
-    console.info(nodeSummary);
+    summary(
+        filename, 
+        transmitAvg, 
+        messages, 
+        totalSentCount, 
+        userAnalytics,
+        messageIdAnomaly,
+        timestampAnomaly
+    );
 }
