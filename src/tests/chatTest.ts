@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { BatchId } from '@ethersphere/bee-js';
 import { ethers } from 'ethers';
-import { MessageInfo, NodeListElement, TestParams, UserThreadMessages } from '../types/types.js';
+import { MessageInfo, NodeListElement, TestParams, UserInfo, UserThreadMessages } from '../types/types.js';
 import { generateID, sleep, RunningAverage } from '../utils/misc.js';
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
@@ -21,12 +21,14 @@ const nodeList: NodeListElement[] = [
 
 let messages: MessageData[] = [];
 let messageAnalyitics: MessageInfo = {};
+let userAnalytics: UserInfo = {};
 let totalSentCount = 0;
 const transmitAvg: RunningAverage = new RunningAverage(1000);
 
 
 export async function startChatTest(params: TestParams) {
     const topic = `Chat-Library-Test-${Math.floor(Math.random() * 10000)}`;
+    const userThreadList: Worker[] = [];
 
     // Generate a list of private keys, each associated to a user
     const walletList = [];
@@ -41,16 +43,29 @@ export async function startChatTest(params: TestParams) {
     initChatRoom(topic, nodeList[0].stamp);
     console.info("Done!");
     await sleep(5000);
+
+    // This user (on the main thread), will only read messages, and create stats based on that
+    startUserFetchProcess(topic);
+    startMessageFetchProcess(topic);
+    const { on, off } = getChatActions();
+
+    on(EVENTS.RECEIVE_MESSAGE, async (newMessages: MessageData[]) => {
+        handleMessageReceive(newMessages, params, userThreadList);
+    });
+
+    on(EVENTS.USER_REGISTERED, handleUserRegistered);
     
+    // This are the users, who are registering, and writing messages, each has a separate Worker thread
     console.info("Registering users...");
-    const userThreadList = walletList.map(async (wallet, i) => {
+    for (let i = 0; i < walletList.length; i++) {
+        console.log("ENTERED LOOP, i is: ", i)
         const nodeIndex = i % nodeList.length;      // This will cycle through nodeList indices
         const userThread = new Worker(path.resolve(__dirname, '../utils/userThread.js'), {
             workerData: {
                 topic,
                 params,
-                address: wallet.address,
-                privateKey: wallet.privateKey,
+                address: walletList[i].address,
+                privateKey: walletList[i].privateKey,
                 node: nodeList[nodeIndex].url,
                 stamp: nodeList[nodeIndex].stamp,
                 username: `user-${i}`
@@ -59,46 +74,42 @@ export async function startChatTest(params: TestParams) {
 
         userThread.on("message", (messageFromThread) => {
             switch (messageFromThread.type) {
+                case UserThreadMessages.INCREMENT_TOTAL_MESSAGE_COUNT:
+                    messageAnalyitics[messageFromThread.id] = {
+                        sent: messageFromThread.timestamp,
+                        received: 0
+                    }
+                    totalSentCount++;
+
+                    break;
+
+                case UserThreadMessages.USER_REGISTERED:
+                    userAnalytics[messageFromThread.username] = {
+                        registrationStarted: messageFromThread.timestamp,
+                        registrationSuccess: 0,
+                        reconnectTimes: [],
+                        reconnectCount: 0
+                    }
+                    break;
+
+                case UserThreadMessages.USER_RECONNECTED:
+                    userAnalytics[messageFromThread.username].reconnectTimes.push(messageFromThread.timestamp);
+                    userAnalytics[messageFromThread.username].reconnectCount++;
+
+                    break;
+
                 default:
                     console.warn("Received message from user threa, that does not have a known label.");
             }
-            if (messageFromThread.type === UserThreadMessages.INCREMENT_TOTAL_MESSAGE_COUNT) {
-                messageAnalyitics[messageFromThread.id] = {
-                    sent: messageFromThread.timestamp,
-                    received: 0
-                }
-                
-                totalSentCount++;
-            }
         });
         
+        if (i < walletList.length-1) console.info(`Waiting ${params.registrationInterval} ms until next user registration...`); 
         await sleep(params.registrationInterval);
-        return userThread;
-    });
-
-    startUserFetchProcess(topic);
-    startMessageFetchProcess(topic);
-    const { on, off } = getChatActions();
-
-    on(EVENTS.RECEIVE_MESSAGE, async (newMessages: MessageData[]) => {
-        handleMessageReceive(newMessages);
-        if (determineDone(params)) {
-            await sleep(10000);
-            
-            for (let k = 0; k < userThreadList.length; k++) {
-                (await userThreadList[k]).terminate();
-            }
-            stopMessageFetchProcess();
-            stopUserFetchProcess();
-            await sleep(1000);
-
-            summary();
-        }
-    });
-    
+        userThreadList.push(userThread);
+    };
 }   
 
-function handleMessageReceive(newMessages: MessageData[]) {
+async function handleMessageReceive(newMessages: MessageData[], params: TestParams, userThreadList: Worker[]) {
     const i = newMessages.length-1;
     const id = generateID(newMessages[i]);
     if (!messageAnalyitics[id]) {
@@ -125,8 +136,34 @@ function handleMessageReceive(newMessages: MessageData[]) {
     );
     messages = orderMessages([...messages, ...uniqueNewMessages]);
 
-    console.info("TOTAL RECEIVED / TOTAL SENT: ", `${messages.length} / ${totalSentCount}`)
+    console.info("TOTAL RECEIVED / TOTAL SENT: ", `${messages.length} / ${totalSentCount}`);
+
+    if (determineDone(params)) {
+        await sleep(10000);
+        
+        for (let k = 0; k < userThreadList.length; k++) {
+            (await userThreadList[k]).terminate();
+        }
+        stopMessageFetchProcess();
+        stopUserFetchProcess();
+        await sleep(1000);
+
+        summary();
+    }
 };
+
+function handleUserRegistered(username: string) {
+    if (userAnalytics[username].registrationSuccess) {
+        // This is a reconnect
+        //userAnalytics[username].reconnectTimes.push(Date.now());
+        //userAnalytics[username].reconnectCount
+        // here we could also do time-to-go-through calculation, if we would want that statistics as well
+        // this way we are only logging that the reconnect happened (see UserThreadMessages.USER_RECONNECTED case in startChatTest)
+    } else {
+        // This is a register event
+        userAnalytics[username].registrationSuccess = Date.now();
+    }
+}
 
 function determineDone(params: TestParams) {
     const total = params.userCount * params.totalMessageCount;
@@ -134,10 +171,33 @@ function determineDone(params: TestParams) {
 }
 
 function summary() {
+    const regTimeAvg = new RunningAverage(1000);
+    const reconnectCountAvg = new RunningAverage(1000);
+    let registrationFailedCount = 0;
+
     console.info("\n\n\n\n");
     console.info("--SUMMARY--");
-    console.info("\n\n");
+    console.info("");
+    
     console.info(`Average transmission time: ${Math.ceil(transmitAvg.getAverage()/1000)} s`);
     console.info("TOTAL RECEIVED / TOTAL SENT: ", `${messages.length} / ${totalSentCount}`);
-    console.info("\n");
+    console.info("");
+    
+    console.info("User statistics: ");
+    for (const [username, stats] of Object.entries(userAnalytics)) {
+        const diff = calcTimeDiff(stats.registrationStarted, stats.registrationSuccess);
+        if (diff < 0) registrationFailedCount++;
+        else regTimeAvg.addValue(diff);
+        reconnectCountAvg.addValue(stats.reconnectCount);
+        console.info(`${username} registered in ${diff} ms. Reconnect count: ${stats.reconnectCount}`);
+    }
+    console.info(`Registration time on average:  ${Math.floor(regTimeAvg.getAverage()/1000)} `);
+    console.info("Reconnect count on average: ", reconnectCountAvg.getAverage());
+    console.info(`Registration failed ${registrationFailedCount} times`);
+
+    console.info("\n")
+}
+
+function calcTimeDiff(start: number, end: number) {
+    return end-start;
 }

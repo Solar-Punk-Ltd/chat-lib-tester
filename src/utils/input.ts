@@ -11,7 +11,7 @@ export function getUserInputs() {
     const messageFrequency = getNumberInput("Enter the message frequency (seconds)", "2") * 1000;
     const registrationInterval = getNumberInput("Enter the registration interval (seconds)", "3") * 1000;
     const totalMessageCount = getNumberInput("Enter total message count", "1000");
-  
+
     console.log("\n--- Input Summary ---");
     console.log(`User Count: ${userCount}`);
     console.log(`Message Frequency: ${messageFrequency} milliseconds`);

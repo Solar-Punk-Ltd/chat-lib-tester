@@ -32,8 +32,6 @@ export class RunningAverage {
   
         this.values.push(newValue);
         this.sum += newValue;
-  
-        console.log("Current average: ", this.getAverage())
     }
   
     getAverage() {
