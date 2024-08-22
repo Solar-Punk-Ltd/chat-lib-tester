@@ -1,11 +1,22 @@
 import { parentPort, workerData } from 'node:worker_threads';
-import { EthAddress, isRegistered, MessageData, registerUser, sendMessage, startUserFetchProcess, stopUserFetchProcess } from 'swarm-decentralized-chat';
+import { 
+    EthAddress, 
+    isRegistered, 
+    MessageData, 
+    registerUser, 
+    sendMessage, 
+    startUserFetchProcess, 
+    stopUserFetchProcess, 
+    setBeeUrl
+} from 'swarm-decentralized-chat';
 import { generateID, sleep } from './misc.js';
 import { UserThreadMessages } from '../types/types.js';
 
 if (!parentPort) throw "Parent Port is null";
 
-const { topic, params, address, privateKey, stamp, username } = workerData;
+const { topic, params, address, privateKey, node, stamp, username } = workerData;
+
+setBeeUrl(node);
 
 startUserFetchProcess(topic);
 

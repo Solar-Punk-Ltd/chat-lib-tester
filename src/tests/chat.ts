@@ -13,8 +13,12 @@ import { initChatRoom, startMessageFetchProcess, getChatActions, orderMessages, 
 
 // List of Bee nodes, with stamp
 const nodeList: NodeListElement[] = [
-    { url: "http://195.88.57.155:1633" , stamp: "4c2ad0d140559eb644f96f61dc8e1ded8e0e34378fcc1738fd8cf2c2d6d83784" as BatchId }
+    { url: "http://195.88.57.155:1633" ,  stamp: "4c2ad0d140559eb644f96f61dc8e1ded8e0e34378fcc1738fd8cf2c2d6d83784" as BatchId },
+    { url: "http://161.97.125.121:1733" , stamp: "1f191134439c1810da0ef41f4decb176b931377f0a66f9eba41a40308a62d8c5" as BatchId },
+    { url: "http://161.97.125.121:1833" , stamp: "f85df6e7a755ac09494696c94e66c8f03f2c8efbe1cb4b607e44ad6df047e8cc" as BatchId },
+    { url: "http://161.97.125.121:2033" , stamp: "7093b4457e4443090cb2e8765823a601b3c0165372f8b5bf013cc0f48be4e367" as BatchId }
 ];
+
 let messages: MessageData[] = [];
 let messageAnalyitics: MessageInfo = {};
 let totalSentCount = 0;
@@ -39,13 +43,15 @@ export async function startChatTest(params: TestParams) {
     
     console.info("Registering users...");
     const userThreadList = walletList.map(async (wallet, i) => {
+        const nodeIndex = i % nodeList.length;      // This will cycle through nodeList indices
         const userThread = new Worker(path.resolve(__dirname, '../utils/userThread.js'), {
             workerData: {
                 topic,
                 params,
                 address: wallet.address,
                 privateKey: wallet.privateKey,
-                stamp: nodeList[0].stamp,           // Later this should be dynamic if we want to test with multiple nodes
+                node: nodeList[nodeIndex].url,
+                stamp: nodeList[nodeIndex].stamp,
                 username: `user-${i}`
             },
         });
