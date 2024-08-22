@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { BatchId } from '@ethersphere/bee-js';
 import { ethers } from 'ethers';
-import { MessageInfo, NodeListElement, TestParams, UserInfo, UserThreadMessages } from '../types/types.js';
+import { FeedCommitHashList, MessageInfo, NodeListElement, TestParams, UserInfo, UserThreadMessages } from '../types/types.js';
 import { generateID, sleep, RunningAverage } from '../utils/misc.js';
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
@@ -25,6 +25,7 @@ let userAnalytics: UserInfo = {};
 let startTime = 0;
 let intervalId: NodeJS.Timeout | null = null;                          // Interval to check whether the process is finished or not (if not all messages can be sent)
 let totalSentCount = 0;
+let feedCommitHashList: FeedCommitHashList = {};
 const transmitAvg: RunningAverage = new RunningAverage(1000);
 
 
@@ -44,7 +45,7 @@ export async function startChatTest(params: TestParams) {
     setBeeUrl(nodeList[0].url);
     initChatRoom(topic, nodeList[0].stamp);
     startTime = Date.now();
-    console.info("Done!");
+    console.info("Done!\n");
     await sleep(params.registrationInterval);
 
     // This user (on the main thread), will only read messages, and create stats based on that
@@ -105,6 +106,19 @@ export async function startChatTest(params: TestParams) {
                 case UserThreadMessages.USER_RECONNECTED:
                     userAnalytics[messageFromThread.username].reconnectTimes.push(messageFromThread.timestamp);
                     userAnalytics[messageFromThread.username].reconnectCount++;
+
+                    break;
+
+                case UserThreadMessages.HASH_RECEIVED:
+                    if (feedCommitHashList[messageFromThread.hash]) {
+                        feedCommitHashList[messageFromThread.hash].count++;
+                    } else {
+                        feedCommitHashList[messageFromThread.hash] = {
+                            count: 1
+                        }
+                    }
+                    console.log("Hash list with counts: ");
+                    Object.keys(feedCommitHashList).forEach((key) => console.log(`${key}: ${feedCommitHashList[key].count}`));
 
                     break;
 
@@ -177,7 +191,7 @@ function determineDone(params: TestParams) {
     const totalRegistrationTime = (params.userCount - 1) * params.registrationInterval;
     const totalMessageTimePerUser = (params.totalMessageCount - 1) * params.messageFrequency;
     const totalExpectedTime = totalRegistrationTime + totalMessageTimePerUser;
-    console.log(`Time left:  ${Math.floor(((startTime + totalExpectedTime + 120 * 1000) - currentTime)/1000)} s`)
+    console.log(`Time left (max):  ${Math.floor(((startTime + totalExpectedTime + 120 * 1000) - currentTime)/1000)} s`)
 
     if (currentTime > startTime + totalExpectedTime + 120 * 1000) {
         return true;        // Process is running for more than expected time + 2 minutes
