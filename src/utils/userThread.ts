@@ -9,7 +9,8 @@ import {
     stopUserFetchProcess, 
     setBeeUrl,
     getChatActions,
-    EVENTS
+    EVENTS,
+    startMessageFetchProcess
 } from 'swarm-decentralized-chat';
 import { generateID, sleep 
     
@@ -32,7 +33,7 @@ on(EVENTS.FEED_COMMIT_HASH, (hash) => {
 setBeeUrl(node);
 
 startUserFetchProcess(topic);
-// message fetch should be here as well, this is not showing reality this way.
+startMessageFetchProcess(topic);
 
 // Register user
 console.info(`Registering ${username} ...`);    // most likely we won't see this message...

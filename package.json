@@ -14,7 +14,7 @@
     "@types/readline-sync": "^1.4.8",
     "ethers": "^5.7.2",
     "readline-sync": "^1.4.10",
-    "swarm-decentralized-chat": "file:/home/user/SolarPunk/swarm-decentralized-chat"
+    "swarm-decentralized-chat": "file:../swarm-decentralized-chat"
   },
   "devDependencies": {
     "@types/lodash": "^4.17.7",
