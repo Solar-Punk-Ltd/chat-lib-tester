@@ -19,6 +19,7 @@ export interface TestParams {
     messageFrequency: number;
     registrationInterval: number;
     totalMessageCount: number;
+    filename: string;
 }
 
 export type MessageInfo = Record<

@@ -41,3 +41,7 @@ export class RunningAverage {
         return this.sum / this.values.length;
     }
 }
+
+export function calcTimeDiff(start: number, end: number) {
+    return end-start;
+}

@@ -1,10 +1,11 @@
 import { Worker } from 'node:worker_threads';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { BatchId } from '@ethersphere/bee-js';
 import { ethers } from 'ethers';
 import { FeedCommitHashList, MessageInfo, NodeListElement, TestParams, UserInfo, UserThreadMessages } from '../types/types.js';
-import { generateID, sleep, RunningAverage } from '../utils/misc.js';
+import { generateID, sleep, RunningAverage, calcTimeDiff } from '../utils/misc.js';
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
@@ -33,6 +34,8 @@ export async function startChatTest(params: TestParams) {
     const topic = `Chat-Library-Test-${Math.floor(Math.random() * 10000)}`;
     const userThreadList: Worker[] = [];
 
+    writeNodeInfoToFile(params.filename);
+
     // Generate a list of private keys, each associated to a user
     const walletList = [];
     for (let i = 0; i < params.userCount; i++) {
@@ -51,7 +54,7 @@ export async function startChatTest(params: TestParams) {
     // This user (on the main thread), will only read messages, and create stats based on that
     startUserFetchProcess(topic);
     startMessageFetchProcess(topic);
-    const { on, off } = getChatActions();
+    const { on } = getChatActions();
 
     on(EVENTS.RECEIVE_MESSAGE, async (newMessages: MessageData[]) => {
         handleMessageReceive(newMessages, params, userThreadList);
@@ -61,7 +64,7 @@ export async function startChatTest(params: TestParams) {
 
     intervalId = setInterval(() => {
         const isDone = determineDone(params);
-        if (isDone) done(userThreadList);
+        if (isDone) done(userThreadList, params.filename);
     }, 15 * 1000);
     
     // This are the users, who are registering, and writing messages, each has a separate Worker thread
@@ -168,16 +171,13 @@ async function handleMessageReceive(newMessages: MessageData[], params: TestPara
 
     console.info("TOTAL RECEIVED / TOTAL SENT: ", `${messages.length} / ${totalSentCount}`);
 
-    if (determineDone(params)) done(userThreadList);
+    if (determineDone(params)) done(userThreadList, params.filename);
 };
 
 function handleUserRegistered(username: string) {
     if (userAnalytics[username].registrationSuccess) {
         // This is a reconnect
-        //userAnalytics[username].reconnectTimes.push(Date.now());
-        //userAnalytics[username].reconnectCount
-        // here we could also do time-to-go-through calculation, if we would want that statistics as well
-        // this way we are only logging that the reconnect happened (see UserThreadMessages.USER_RECONNECTED case in startChatTest)
+        return;
     } else {
         // This is a register event
         userAnalytics[username].registrationSuccess = Date.now();
@@ -200,39 +200,40 @@ function determineDone(params: TestParams) {
     return Object.keys(messageAnalyitics).length === total;
 }
 
-function summary() {
+function summary(filename: string) {
     const regTimeAvg = new RunningAverage(1000);
     const reconnectCountAvg = new RunningAverage(1000);
     let registrationFailedCount = 0;
 
-    console.info("\n\n\n\n");
-    console.info("--SUMMARY--");
-    console.info("");
-    
-    console.info(`Average transmission time: ${Math.ceil(transmitAvg.getAverage()/1000)} s`);
-    console.info("TOTAL RECEIVED / TOTAL SENT: ", `${messages.length} / ${totalSentCount}`);
-    console.info("");
-    
-    console.info("User statistics: ");
+    let summaryContent = "\n\n";
+    summaryContent += "--- Test Summary ---\n\n";
+
+    summaryContent += `-- Message Stats --`
+    summaryContent += `Average transmission time: ${Math.ceil(transmitAvg.getAverage()/1000)} s\n`;
+    summaryContent += `TOTAL RECEIVED / TOTAL SENT: ${messages.length} / ${totalSentCount}\n\n`;
+
+    summaryContent += "-- User Stats --\n";
     for (const [username, stats] of Object.entries(userAnalytics)) {
         const diff = calcTimeDiff(stats.registrationStarted, stats.registrationSuccess);
         if (diff < 0) registrationFailedCount++;
         else regTimeAvg.addValue(diff);
         reconnectCountAvg.addValue(stats.reconnectCount);
-        console.info(`${username} registered in ${diff} ms. Reconnect count: ${stats.reconnectCount}`);
+        summaryContent += `${username} registered in ${diff} ms. Reconnect count: ${stats.reconnectCount}\n`;
     }
-    console.info(`Registration time on average:  ${Math.floor(regTimeAvg.getAverage()/1000)} `);
-    console.info("Reconnect count on average: ", reconnectCountAvg.getAverage());
-    console.info(`Registration failed for ${registrationFailedCount} users`);
+    summaryContent += `Registration time on average: ${Math.floor(regTimeAvg.getAverage()/1000)} s\n`;
+    summaryContent += `Reconnect count on average: ${reconnectCountAvg.getAverage()}\n`;
+    summaryContent += `Registration failed for ${registrationFailedCount} users\n`;
 
-    console.info("\n")
+    summaryContent += "\n";
+
+    const reportsDir = './reports';
+    const filePath = path.join(reportsDir, filename);
+    fs.appendFileSync(filePath, summaryContent);
+
+    console.info(summaryContent);
 }
 
-function calcTimeDiff(start: number, end: number) {
-    return end-start;
-}
-
-async function done(userThreadList: Worker[]) {
+async function done(userThreadList: Worker[], filename: string) {
     if (intervalId) clearInterval(intervalId);
     await sleep(Math.floor(transmitAvg.getAverage()*1.2));
         
@@ -243,5 +244,22 @@ async function done(userThreadList: Worker[]) {
     stopUserFetchProcess();
     await sleep(1000);
 
-    summary();
+    summary(filename);
+}
+
+function writeNodeInfoToFile(filename: string) {
+    const reportsDir = './reports';
+    const filePath = path.join(reportsDir, filename);
+
+    let nodeSummary = "\n\n--- Node List ---\n";
+
+    nodeList.forEach(node => {
+        nodeSummary += `URL: ${node.url}, Stamp: ${node.stamp}\n`;
+    });
+
+    nodeSummary += `\nTotal node count: ${nodeList.length}\n`;
+
+    fs.appendFileSync(filePath, nodeSummary);
+
+    console.info(nodeSummary);
 }
