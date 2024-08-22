@@ -1,6 +1,6 @@
 
 import { getUserInputs } from './utils/input.js';
-import { startChatTest } from './tests/chat.js';
+import { startChatTest } from './tests/chatTest.js';
 
 
 const main = () => {

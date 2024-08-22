@@ -9,7 +9,9 @@ import {
     stopUserFetchProcess, 
     setBeeUrl
 } from 'swarm-decentralized-chat';
-import { generateID, sleep } from './misc.js';
+import { generateID, sleep 
+    
+} from './misc.js';
 import { UserThreadMessages } from '../types/types.js';
 
 if (!parentPort) throw "Parent Port is null";

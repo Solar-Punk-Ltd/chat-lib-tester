@@ -21,8 +21,8 @@ importers:
         specifier: ^1.4.10
         version: 1.4.10
       swarm-decentralized-chat:
-        specifier: file:./src/libs/chat
-        version: file:src/libs/chat
+        specifier: file:/home/user/SolarPunk/swarm-decentralized-chat
+        version: file:../swarm-decentralized-chat
     devDependencies:
       '@types/lodash':
         specifier: ^4.17.7
@@ -134,8 +134,8 @@ packages:
   '@types/lodash@4.17.7':
     resolution: {integrity: sha512-8wTvZawATi/lsmNu10/j2hk1KEP0IvjubqPE3cu1Xz7xfXXt5oCq3SNUz4fMIP4XGF9Ky+Ue2tBA3hcS7LSBlA==}
 
-  '@types/node@22.3.0':
-    resolution: {integrity: sha512-nrWpWVaDZuaVc5X84xJ0vNrLvomM205oQyLsRt7OHNZbSHslcWsvgFR7O7hire2ZonjLrWBbedmotmIlJDVd6g==}
+  '@types/node@22.5.0':
+    resolution: {integrity: sha512-DkFrJOe+rfdHTqqMg0bSNlGlQ85hSoh2TPzZyhHsXnMtligRWpxUySiyw8FY14ITt24HVCiQPWxS3KO/QlGmWg==}
 
   '@types/readable-stream@2.3.15':
     resolution: {integrity: sha512-oM5JSKQCcICF1wvGgmecmHldZ48OZamtMxcGGVICOJA8o8cahXC1zEVAif8iwoc5j8etxFaRFnf095+CDsuoFQ==}
@@ -258,8 +258,8 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  swarm-decentralized-chat@file:src/libs/chat:
-    resolution: {directory: src/libs/chat, type: directory}
+  swarm-decentralized-chat@file:../swarm-decentralized-chat:
+    resolution: {directory: ../swarm-decentralized-chat, type: directory}
 
   tar-js@0.3.0:
     resolution: {integrity: sha512-9uqP2hJUZNKRkwPDe5nXxXdzo6w+BFBPq9x/tyi5/U/DneuSesO/HMb0y5TeWpfcv49YDJTs7SrrZeeu8ZHWDA==}
@@ -269,8 +269,8 @@ packages:
     engines: {node: '>=4.2.0'}
     hasBin: true
 
-  undici-types@6.18.2:
-    resolution: {integrity: sha512-5ruQbENj95yDYJNS3TvcaxPMshV7aizdv/hWYjGIKoANWKjhWNBsr2YEuYZKodQulB1b8l7ILOuDQep3afowQQ==}
+  undici-types@6.19.8:
+    resolution: {integrity: sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw==}
 
   web-streams-polyfill@4.0.0:
     resolution: {integrity: sha512-0zJXHRAYEjM2tUfZ2DiSOHAa2aw1tisnnhU3ufD57R8iefL+DcdJyRBRyJpG+NUimDgbTI/lH+gAE1PAvV3Cgw==}
@@ -583,13 +583,13 @@ snapshots:
 
   '@types/lodash@4.17.7': {}
 
-  '@types/node@22.3.0':
+  '@types/node@22.5.0':
     dependencies:
-      undici-types: 6.18.2
+      undici-types: 6.19.8
 
   '@types/readable-stream@2.3.15':
     dependencies:
-      '@types/node': 22.3.0
+      '@types/node': 22.5.0
       safe-buffer: 5.1.2
 
   '@types/readline-sync@1.4.8': {}
@@ -729,7 +729,7 @@ snapshots:
 
   semver@7.6.3: {}
 
-  swarm-decentralized-chat@file:src/libs/chat:
+  swarm-decentralized-chat@file:../swarm-decentralized-chat:
     dependencies:
       '@ethersphere/bee-js': 6.9.1
       ethers: 5.7.2
@@ -743,7 +743,7 @@ snapshots:
 
   typescript@4.9.5: {}
 
-  undici-types@6.18.2: {}
+  undici-types@6.19.8: {}
 
   web-streams-polyfill@4.0.0: {}
 
