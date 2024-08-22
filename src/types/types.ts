@@ -1,7 +1,9 @@
 import { BatchId } from "@ethersphere/bee-js";
 
 export enum UserThreadMessages {
-    "INCREMENT_TOTAL_MESSAGE_COUNT"
+    "INCREMENT_TOTAL_MESSAGE_COUNT",
+    "USER_REGISTERED",
+    "USER_RECONNECTED"
 }
 
 type Timestamp = number;
@@ -24,3 +26,12 @@ export type MessageInfo = Record<
         received: Timestamp 
     }
 >;
+
+export type UserInfo = Record<
+    string, {
+        registrationStarted: Timestamp;
+        registrationSuccess: Timestamp;
+        reconnectTimes: Timestamp[];
+        reconnectCount: number;
+    }
+>

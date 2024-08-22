@@ -30,7 +30,11 @@ await registerUser(topic, {
     stamp: stamp,
     nickName: username
 });
-parentPort.postMessage(`User ${username} registered.`);
+parentPort.postMessage({
+    type: UserThreadMessages.USER_REGISTERED,
+    username,
+    timestamp: Date.now()
+});
 
 
 // Send messages
@@ -42,6 +46,11 @@ for (let i = 0; i < params.totalMessageCount; i++) {
             stamp: stamp,
             nickName: username
         });
+        parentPort.postMessage({
+            type: UserThreadMessages.USER_RECONNECTED,
+            username,
+            timestamp: Date.now()
+        })
     }
 
     const timestamp = Date.now();

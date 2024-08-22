@@ -58,6 +58,10 @@ export async function startChatTest(params: TestParams) {
         });
 
         userThread.on("message", (messageFromThread) => {
+            switch (messageFromThread.type) {
+                default:
+                    console.warn("Received message from user threa, that does not have a known label.");
+            }
             if (messageFromThread.type === UserThreadMessages.INCREMENT_TOTAL_MESSAGE_COUNT) {
                 messageAnalyitics[messageFromThread.id] = {
                     sent: messageFromThread.timestamp,
@@ -80,6 +84,7 @@ export async function startChatTest(params: TestParams) {
         handleMessageReceive(newMessages);
         if (determineDone(params)) {
             await sleep(10000);
+            
             for (let k = 0; k < userThreadList.length; k++) {
                 (await userThreadList[k]).terminate();
             }
@@ -96,7 +101,18 @@ export async function startChatTest(params: TestParams) {
 function handleMessageReceive(newMessages: MessageData[]) {
     const i = newMessages.length-1;
     const id = generateID(newMessages[i]);
-    messageAnalyitics[id].received = Date.now();
+    if (!messageAnalyitics[id]) {
+        console.warn("WARNING! MESSAGE COULD NOT BE FOUND, THIS IS AN ANOMALY!");
+        console.log("It seems like message was received before it was sent, or the ID is wrong.");
+        console.log("ID of the message: ", id);
+        messageAnalyitics[id] = {
+            sent: 0,
+            received: Date.now()
+        }
+        messageAnalyitics[id].received = Date.now();
+    } else {
+        messageAnalyitics[id].received = Date.now();
+    }
     const time = messageAnalyitics[id].received - messageAnalyitics[id].sent;
     transmitAvg.addValue(time);
     console.info("New message: ", newMessages[i]);
