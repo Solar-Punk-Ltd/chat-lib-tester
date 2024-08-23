@@ -25,13 +25,18 @@ export function summary(
     summaryContent += `    Average transmission time: ${Math.ceil(transmitAvg.getAverage()/1000)} s\n`;
     summaryContent += `    TOTAL RECEIVED / TOTAL SENT: ${messages.length} / ${totalSentCount}\n\n`;
 
-    summaryContent += "  -- User Stats --\n";
+    summaryContent += "  -- User Stats --\n";    
     for (const [username, stats] of Object.entries(userAnalytics)) {
         const diff = calcTimeDiff(stats.registrationStarted, stats.registrationSuccess);
-        if (diff < 0) registrationFailedCount++;
-        else regTimeAvg.addValue(diff);
+        if (diff < 0) {
+            registrationFailedCount++;
+            summaryContent += `      ${username} failed to register. Reconnect count: ${stats.reconnectCount}\n`;
+        }
+        else {
+            regTimeAvg.addValue(diff);
+            summaryContent += `      ${username} registered in ${diff} ms. Reconnect count: ${stats.reconnectCount}\n`;
+        }
         reconnectCountAvg.addValue(stats.reconnectCount);
-        summaryContent += `      ${username} registered in ${diff} ms. Reconnect count: ${stats.reconnectCount}\n`;
     }
     summaryContent += `\n      Registration time on average: ${Math.floor(regTimeAvg.getAverage()/1000)} s\n`;
     summaryContent += `      Reconnect count on average: ${reconnectCountAvg.getAverage()}\n`;

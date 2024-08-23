@@ -1,28 +1,26 @@
 import { parentPort, workerData } from 'node:worker_threads';
-
-import { 
-    EthAddress, 
-    isRegistered, 
-    MessageData, 
-    registerUser, 
-    sendMessage, 
-    startUserFetchProcess, 
-    stopUserFetchProcess, 
-    setBeeUrl,
-    getChatActions,
-    EVENTS,
-    startMessageFetchProcess
-} from 'swarm-decentralized-chat';
-
+import { EthAddress,  EVENTS,  MessageData, SwarmChat } from 'swarm-decentralized-chat';
 import { generateID, sleep } from './misc.js';
 import { UserThreadMessages } from '../types/types.js';
 
 
 if (!parentPort) throw "Parent Port is null";
 
-const { topic, params, address, privateKey, node, stamp, username } = workerData;
+// Parameters from the main thread
+const { 
+    topic, 
+    params, 
+    address, 
+    privateKey, 
+    node,
+    usersFeedTimeout,
+    stamp, 
+    username
+} = workerData;
 
-const { on } = getChatActions();
+const chat = new SwarmChat({ url: node, usersFeedTimeout });
+
+const { on } = chat.getChatActions();
 
 on(EVENTS.FEED_COMMIT_HASH, (hash) => {
     parentPort?.postMessage({
@@ -31,14 +29,12 @@ on(EVENTS.FEED_COMMIT_HASH, (hash) => {
     });
 });
 
-setBeeUrl(node);
-
-startUserFetchProcess(topic);
-startMessageFetchProcess(topic);
+chat.startUserFetchProcess(topic);
+chat.startMessageFetchProcess(topic);
 
 // Register user
 console.info(`Registering ${username} ...`);    // most likely we won't see this message...
-await registerUser(topic, { 
+await chat.registerUser(topic, { 
     participant: address as EthAddress,
     key: privateKey,
     stamp: stamp,
@@ -53,11 +49,11 @@ parentPort.postMessage({                                                        
 
 // Send messages
 for (let i = 0; i < params.totalMessageCount; i++) {
-    if (!isRegistered(address)) {                                                       // Re-register, if not on users list
+    if (!chat.isRegistered(address)) {                                                  // Re-register, if not on users list
         await sleep(params.registrationInterval);                                       // Protect agains overload
-        if (!isRegistered(address)) {
+        if (!chat.isRegistered(address)) {
             console.info(`${username} is reconnecting...`);
-            await registerUser(topic, { 
+            await chat.registerUser(topic, { 
                 participant: address as EthAddress,
                 key: privateKey,
                 stamp: stamp,
@@ -79,7 +75,7 @@ for (let i = 0; i < params.totalMessageCount; i++) {
         address,
         timestamp
     };
-    await sendMessage(                                                                  // Upload message to our own feed
+    await chat.sendMessage(                                                             // Upload message to our own feed
         address,
         topic,
         messageObj,
@@ -94,4 +90,4 @@ for (let i = 0; i < params.totalMessageCount; i++) {
     await sleep(params.messageFrequency);
 }
 
-stopUserFetchProcess();
+chat.stopUserFetchProcess();

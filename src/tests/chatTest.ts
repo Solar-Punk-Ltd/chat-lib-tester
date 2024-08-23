@@ -5,22 +5,16 @@ import { BatchId } from '@ethersphere/bee-js';
 import { ethers } from 'ethers';
 
 import { 
-    initChatRoom,
-    startMessageFetchProcess,
-    getChatActions,
     orderMessages,
     MessageData,
     EVENTS,
-    startUserFetchProcess,
-    setBeeUrl,
-    getUserCount,
-    stopMessageFetchProcess,
-    stopUserFetchProcess
+    SwarmChat,
 } from 'swarm-decentralized-chat';
 
 import { FeedCommitHashList, MessageInfo, NodeListElement, TestParams, UserInfo, UserThreadMessages } from '../types/types.js';
 import { generateID, sleep, RunningAverage, determineDone } from '../utils/misc.js';
 import { summary, writeNodeInfoToFile } from '../utils/info.js';
+import { getUserInputs } from '../utils/input.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,8 +22,8 @@ const __dirname = path.dirname(__filename);
 
 // List of Bee nodes, with stamp
 const nodeList: NodeListElement[] = [
-    { url: "http://161.97.125.121:1733" , stamp: "1f191134439c1810da0ef41f4decb176b931377f0a66f9eba41a40308a62d8c5" as BatchId },
     { url: "http://195.88.57.155:1633" ,  stamp: "b4fe81362508d9405e8f67f319e3feb715fb7bef7d2bf14dda046e8f9c3aafbc" as BatchId },
+    { url: "http://161.97.125.121:1733" , stamp: "1f191134439c1810da0ef41f4decb176b931377f0a66f9eba41a40308a62d8c5" as BatchId },
     { url: "http://161.97.125.121:1833" , stamp: "f85df6e7a755ac09494696c94e66c8f03f2c8efbe1cb4b607e44ad6df047e8cc" as BatchId },
     { url: "http://161.97.125.121:2033" , stamp: "7093b4457e4443090cb2e8765823a601b3c0165372f8b5bf013cc0f48be4e367" as BatchId }
 ];
@@ -45,13 +39,15 @@ const transmitAvg: RunningAverage = new RunningAverage(1000);
 let messageIdAnomaly = 0;
 let timestampAnomaly = 0;
 let isDone = false;
+const usersFeedTimeout = 20000;                                        // 20 seconds. This is not prompted from the user, but it could be. Will be visible in stats.
 
 
 // The main chat test, currently this is the only one, but probably there will be more
-export async function startChatTest(params: TestParams) {
+export async function startChatTest() {
     const topic = `Chat-Library-Test-${Math.floor(Math.random() * 10000)}`;
     const userThreadList: Worker[] = [];
 
+    const params = getUserInputs(usersFeedTimeout);
     writeNodeInfoToFile(params.filename, nodeList);
 
     // Generate a list of private keys, each associated to a user
@@ -63,27 +59,27 @@ export async function startChatTest(params: TestParams) {
 
     // Create the chat room
     console.info("Creating chat room...");
-    setBeeUrl(nodeList[0].url);
-    initChatRoom(topic, nodeList[0].stamp);
+    const chat = new SwarmChat({ url: nodeList[0].url, usersFeedTimeout });
+    chat.initChatRoom(topic, nodeList[0].stamp);
     startTime = Date.now();
     console.info(`Done! Now will wait ${params.registrationInterval} ms before starting registration. \n`);
     await sleep(params.registrationInterval);
 
     // This user (on the main thread), will only read messages, and create stats based on that
-    startUserFetchProcess(topic);
-    startMessageFetchProcess(topic);
-    const { on } = getChatActions();
+    chat.startUserFetchProcess(topic);
+    chat.startMessageFetchProcess(topic);
+    const { on } = chat.getChatActions();
 
     // Some analytics is happening in handle-functions
     on(EVENTS.RECEIVE_MESSAGE, async (newMessages: MessageData[]) => {
-        handleMessageReceive(newMessages, params, userThreadList);
+        handleMessageReceive(chat, newMessages, params, userThreadList);
     });
     on(EVENTS.USER_REGISTERED, handleUserRegistered);
 
     // Stop the test process on timeout as well, not just if all messages were sent
     intervalId = setInterval(() => {
         if (determineDone(params, startTime, messageAnalyitics))
-            done(userThreadList, params.filename);
+            done(chat, userThreadList, params.filename);
     }, 15 * 1000);
     
     // This are the users, who are registering, and writing messages, each has a separate Worker thread
@@ -97,6 +93,7 @@ export async function startChatTest(params: TestParams) {
                 address: walletList[i].address,
                 privateKey: walletList[i].privateKey,
                 node: nodeList[nodeIndex].url,
+                usersFeedTimeout,
                 stamp: nodeList[nodeIndex].stamp,
                 username: `user-${i}`
             },
@@ -113,7 +110,7 @@ export async function startChatTest(params: TestParams) {
     };
 }   
 
-async function handleMessageReceive(newMessages: MessageData[], params: TestParams, userThreadList: Worker[]) {
+async function handleMessageReceive(chat: SwarmChat, newMessages: MessageData[], params: TestParams, userThreadList: Worker[]) {
     const i = newMessages.length-1;
     const id = generateID(newMessages[i]);
 
@@ -133,7 +130,7 @@ async function handleMessageReceive(newMessages: MessageData[], params: TestPara
     }
 
     console.info("New message: ", newMessages[i]);
-    console.info("User count: ", getUserCount());
+    console.info("User count: ", chat.getUserCount());
 
     // Calculate transmission time. If some of the values does not look like a timestamp, that's an error.
     if (messageAnalyitics[id].received < 1600000000000 || messageAnalyitics[id].sent < 1600000000000) {
@@ -156,7 +153,7 @@ async function handleMessageReceive(newMessages: MessageData[], params: TestPara
     console.info("TOTAL RECEIVED / TOTAL SENT: ", `${messages.length} / ${totalSentCount}`);
 
     if (determineDone(params, startTime, messageAnalyitics)) 
-        done(userThreadList, params.filename);
+        done(chat, userThreadList, params.filename);
 };
 
 function handleUserRegistered(username: string) {
@@ -216,7 +213,7 @@ function handleUserThreadEvent(userThread: Worker) {
     });
 }
 
-async function done(userThreadList: Worker[], filename: string) {
+async function done(chat: SwarmChat, userThreadList: Worker[], filename: string) {
     // Stop the timeout interval
     if (intervalId) clearInterval(intervalId);
     else return;
@@ -233,8 +230,8 @@ async function done(userThreadList: Worker[], filename: string) {
         (await userThreadList[k]).terminate();
     }
 
-    stopMessageFetchProcess();
-    stopUserFetchProcess();
+    chat.stopMessageFetchProcess();
+    chat.stopUserFetchProcess();
     await sleep(1000);
 
     summary(

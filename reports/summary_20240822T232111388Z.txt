@@ -1,0 +1,48 @@
+--- Input Summary ---
+    User Count: 20
+    Message Frequency: 30000 milliseconds
+    Registration Interval: 20000 milliseconds
+    Total message count (per user): 10
+    UsersFeed write timeout: 20000 milliseconds
+
+--- Node List ---
+    URL: http://195.88.57.155:1633, Stamp: b4fe81362508d9405e8f67f319e3feb715fb7bef7d2bf14dda046e8f9c3aafbc
+    URL: http://161.97.125.121:1733, Stamp: 1f191134439c1810da0ef41f4decb176b931377f0a66f9eba41a40308a62d8c5
+    URL: http://161.97.125.121:1833, Stamp: f85df6e7a755ac09494696c94e66c8f03f2c8efbe1cb4b607e44ad6df047e8cc
+    URL: http://161.97.125.121:2033, Stamp: 7093b4457e4443090cb2e8765823a601b3c0165372f8b5bf013cc0f48be4e367
+
+    Total node count: 4
+
+
+--- Test Summary ---
+
+  -- Message Stats --
+    Average transmission time: 23 s
+    TOTAL RECEIVED / TOTAL SENT: 94 / 181
+
+  -- User Stats --
+      user-0 registered in 10408 ms. Reconnect count: 0
+      user-1 registered in 8947 ms. Reconnect count: 4
+      user-2 registered in 9245 ms. Reconnect count: 4
+      user-3 registered in 99287 ms. Reconnect count: 5
+      user-4 registered in 13555 ms. Reconnect count: 3
+      user-5 registered in 8628 ms. Reconnect count: 4
+      user-6 registered in 10642 ms. Reconnect count: 5
+      user-7 registered in 102945 ms. Reconnect count: 4
+      user-8 registered in 13259 ms. Reconnect count: 6
+      user-9 registered in 10475 ms. Reconnect count: 5
+      user-10 registered in 8581 ms. Reconnect count: 5
+      user-11 registered in 43490 ms. Reconnect count: 6
+      user-12 registered in 17042 ms. Reconnect count: 4
+      user-13 registered in 135524 ms. Reconnect count: 6
+      user-14 registered in 203425 ms. Reconnect count: 6
+      user-15 registered in 141459 ms. Reconnect count: 6
+      user-16 registered in 185172 ms. Reconnect count: 6
+      user-17 registered in 52333 ms. Reconnect count: 5
+      user-18 registered in 26707 ms. Reconnect count: 5
+      user-19 registered in 51711 ms. Reconnect count: 5
+
+      Registration time on average: 57 s
+      Reconnect count on average: 4.7
+      Registration failed for 0 users
+

@@ -21,7 +21,7 @@ importers:
         specifier: ^1.4.10
         version: 1.4.10
       swarm-decentralized-chat:
-        specifier: file:/home/user/SolarPunk/swarm-decentralized-chat
+        specifier: file:../swarm-decentralized-chat
         version: file:../swarm-decentralized-chat
     devDependencies:
       '@types/lodash':
