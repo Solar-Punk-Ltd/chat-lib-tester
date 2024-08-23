@@ -4,7 +4,8 @@ export enum UserThreadMessages {
     "INCREMENT_TOTAL_MESSAGE_COUNT",
     "USER_REGISTERED",
     "USER_RECONNECTED",
-    "HASH_RECEIVED"
+    "HASH_RECEIVED",
+    "ERROR"
 }
 
 type Timestamp = number;

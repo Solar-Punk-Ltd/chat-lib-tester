@@ -5,12 +5,12 @@ import { BatchId } from '@ethersphere/bee-js';
 import { ethers } from 'ethers';
 
 import { 
-    orderMessages,
     MessageData,
     EVENTS,
     SwarmChat,
 } from 'swarm-decentralized-chat';
 
+import logger from '../utils/logger.js';
 import { FeedCommitHashList, MessageInfo, NodeListElement, TestParams, UserInfo, UserThreadMessages } from '../types/types.js';
 import { generateID, sleep, RunningAverage, determineDone } from '../utils/misc.js';
 import { summary, writeNodeInfoToFile } from '../utils/info.js';
@@ -58,11 +58,11 @@ export async function startChatTest() {
     }
 
     // Create the chat room
-    console.info("Creating chat room...");
-    const chat = new SwarmChat({ url: nodeList[0].url, usersFeedTimeout });
+    logger.info("Creating chat room...");
+    const chat = new SwarmChat({ url: nodeList[0].url, usersFeedTimeout, logLevel: "warn" });
     chat.initChatRoom(topic, nodeList[0].stamp);
     startTime = Date.now();
-    console.info(`Done! Now will wait ${params.registrationInterval} ms before starting registration. \n`);
+    logger.info(`Done! Now we will wait ${params.registrationInterval} ms before starting registration. \n`);
     await sleep(params.registrationInterval);
 
     // This user (on the main thread), will only read messages, and create stats based on that
@@ -83,7 +83,7 @@ export async function startChatTest() {
     }, 15 * 1000);
     
     // This are the users, who are registering, and writing messages, each has a separate Worker thread
-    console.info("Registering users...");
+    logger.info("Registering users...");
     for (let i = 0; i < walletList.length; i++) {
         const nodeIndex = i % nodeList.length;      // This will cycle through nodeList indices
         const userThread = new Worker(path.resolve(__dirname, '../utils/userThread.js'), {
@@ -104,7 +104,7 @@ export async function startChatTest() {
         // Handle the messages (notifications) that are coming from Worker threads
         handleUserThreadEvent(userThread);
         
-        if (i < walletList.length-1) console.info(`Waiting ${params.registrationInterval} ms until next user registration...`); 
+        if (i < walletList.length-1) logger.info(`Waiting ${params.registrationInterval} ms until next user registration...`); 
         await sleep(params.registrationInterval);
         userThreadList.push(userThread);
     };
@@ -116,9 +116,9 @@ async function handleMessageReceive(chat: SwarmChat, newMessages: MessageData[],
 
     // Take note when the message was received. If message ID can't be found, that's an error.
     if (!messageAnalyitics[id]) {
-        console.warn("WARNING! MESSAGE COULD NOT BE FOUND, THIS IS AN ANOMALY!");
-        console.log("It seems like message was received before it was sent, or the ID is wrong.");
-        console.log("ID of the message: ", id);
+        logger.warn("WARNING! MESSAGE COULD NOT BE FOUND, THIS IS AN ANOMALY!");
+        logger.trace("It seems like message was received before it was sent, or the ID is wrong.");
+        logger.trace(`ID of the message:  ${id}`);
         messageAnalyitics[id] = {
             sent: 0,
             received: Date.now()
@@ -129,28 +129,28 @@ async function handleMessageReceive(chat: SwarmChat, newMessages: MessageData[],
         messageAnalyitics[id].received = Date.now();
     }
 
-    console.info("New message: ", newMessages[i]);
-    console.info("User count: ", chat.getUserCount());
+    logger.info(`${newMessages[i].message}`);                   // New message
+    logger.debug(`User count:  ${chat.getUserCount()}`);
 
     // Calculate transmission time. If some of the values does not look like a timestamp, that's an error.
     if (messageAnalyitics[id].received < 1600000000000 || messageAnalyitics[id].sent < 1600000000000) {
-        console.warn("WARNING! ANOMALY, received or sent is not correct timestamp");
-        console.log("Received: ", messageAnalyitics[id].received);
-        console.log("Sent: ", messageAnalyitics[id].sent);
+        logger.warn("WARNING! ANOMALY, received or sent is not correct timestamp");
+        logger.trace(`Received:  ${messageAnalyitics[id].received}`);
+        logger.trace(`Sent:  ${messageAnalyitics[id].sent}`);
         timestampAnomaly++;
     } else {
         const time = messageAnalyitics[id].received - messageAnalyitics[id].sent;
         transmitAvg.addValue(time);
-        console.info(`Transmission time: ${time} ms. Average: ${Math.ceil(transmitAvg.getAverage()/1000)} s`);
+        logger.info(`Transmission time: ${time} ms. Average: ${Math.ceil(transmitAvg.getAverage()/1000)} s`);
     }
 
 
     const uniqueNewMessages = newMessages.filter(
         (newMsg) => !messages.some((prevMsg) => prevMsg.timestamp === newMsg.timestamp),
     );
-    messages = orderMessages([...messages, ...uniqueNewMessages]);
+    messages = chat.orderMessages([...messages, ...uniqueNewMessages]);
 
-    console.info("TOTAL RECEIVED / TOTAL SENT: ", `${messages.length} / ${totalSentCount}`);
+    logger.info(`TOTAL RECEIVED / TOTAL SENT: ${messages.length} / ${totalSentCount} \n`);
 
     if (determineDone(params, startTime, messageAnalyitics)) 
         done(chat, userThreadList, params.filename);
@@ -202,36 +202,38 @@ function handleUserThreadEvent(userThread: Worker) {
                         count: 1
                     }
                 }
-                console.log("Hash list with counts: ");
-                Object.keys(feedCommitHashList).forEach((key) => console.log(`${key}: ${feedCommitHashList[key].count}`));
+                logger.trace("Hash list with counts: ");
+                Object.keys(feedCommitHashList).forEach((key) => logger.trace(`${key}: ${feedCommitHashList[key].count}`));
+
+                break;
+
+            case UserThreadMessages.ERROR:
+                logger.error(`Error on the instance of ${messageFromThread.username}: ${messageFromThread.error.error}`);
+                // We could count number of errors, and things like that.
 
                 break;
 
             default:
-                console.warn("Received message from user threa, that does not have a known label.");
+                logger.warn("Received message from user threa, that does not have a known label.");
         }
     });
 }
 
 async function done(chat: SwarmChat, userThreadList: Worker[], filename: string) {
-    // Stop the timeout interval
-    if (intervalId) clearInterval(intervalId);
+    if (intervalId) clearInterval(intervalId);                      // Stop the timeout interval
     else return;
     
-    // A handleMessage function might be still running
-    if (isDone) return;
+    if (isDone) return;                                             // A handleMessage function might be still running
     isDone = true;
 
-    // Wait for last messages
-    await sleep(Math.floor(transmitAvg.getAverage()*1.2));
+    await sleep(Math.floor(transmitAvg.getAverage()*1.2));          // Wait for last messages
         
-    // Terminate all threads
-    for (let k = 0; k < userThreadList.length; k++) {
+    for (let k = 0; k < userThreadList.length; k++) {               // Terminate all threads
         (await userThreadList[k]).terminate();
     }
 
-    chat.stopMessageFetchProcess();
-    chat.stopUserFetchProcess();
+    chat.stopMessageFetchProcess();                                 // Stop periodically fetching messages
+    chat.stopUserFetchProcess();                                    // and Users feed updates
     await sleep(1000);
 
     summary(

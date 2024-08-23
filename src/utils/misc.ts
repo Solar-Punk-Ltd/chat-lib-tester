@@ -1,5 +1,6 @@
 import { MessageData } from "swarm-decentralized-chat";
 import { MessageInfo, TestParams } from "../types/types.js";
+import logger from "./logger.js";
 
 // General sleep function, usage: await sleep(ms)
 export function sleep(delay: number) {
@@ -57,7 +58,7 @@ export function determineDone(params: TestParams, startTime: number, messageAnal
     const totalRegistrationTime = (params.userCount - 1) * params.registrationInterval;
     const totalMessageTimePerUser = (params.totalMessageCount - 1) * params.messageFrequency;
     const totalExpectedTime = totalRegistrationTime + totalMessageTimePerUser;
-    console.log(`Time left (max):  ${Math.floor(((startTime + totalExpectedTime + 120 * 1000) - currentTime)/1000)} s`)
+    logger.info(`Time left (max):  ${Math.floor(((startTime + totalExpectedTime + 120 * 1000) - currentTime)/1000)} s`);
 
     if (currentTime > startTime + totalExpectedTime + 120 * 1000) {
         return true;        // Process is running for more than expected time + 2 minutes

@@ -2,7 +2,7 @@ import { parentPort, workerData } from 'node:worker_threads';
 import { EthAddress,  EVENTS,  MessageData, SwarmChat } from 'swarm-decentralized-chat';
 import { generateID, sleep } from './misc.js';
 import { UserThreadMessages } from '../types/types.js';
-
+import logger from '../utils/logger.js';
 
 if (!parentPort) throw "Parent Port is null";
 
@@ -22,6 +22,7 @@ const chat = new SwarmChat({ url: node, usersFeedTimeout });
 
 const { on } = chat.getChatActions();
 
+// This hash is used for randomly selecting the next person who will send in the UsersFeedCommit
 on(EVENTS.FEED_COMMIT_HASH, (hash) => {
     parentPort?.postMessage({
         type: UserThreadMessages.HASH_RECEIVED,
@@ -29,11 +30,20 @@ on(EVENTS.FEED_COMMIT_HASH, (hash) => {
     });
 });
 
+// Error event happened in library
+on(EVENTS.ERROR, (error) => {
+    parentPort?.postMessage({
+        type: UserThreadMessages.ERROR,
+        username,
+        error
+    })
+});
+
 chat.startUserFetchProcess(topic);
 chat.startMessageFetchProcess(topic);
 
 // Register user
-console.info(`Registering ${username} ...`);    // most likely we won't see this message...
+logger.info(`Registering ${username} ...`);
 await chat.registerUser(topic, { 
     participant: address as EthAddress,
     key: privateKey,
@@ -52,7 +62,7 @@ for (let i = 0; i < params.totalMessageCount; i++) {
     if (!chat.isRegistered(address)) {                                                  // Re-register, if not on users list
         await sleep(params.registrationInterval);                                       // Protect agains overload
         if (!chat.isRegistered(address)) {
-            console.info(`${username} is reconnecting...`);
+            logger.info(`${username} is reconnecting...`);
             await chat.registerUser(topic, { 
                 participant: address as EthAddress,
                 key: privateKey,

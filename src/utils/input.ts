@@ -37,7 +37,7 @@ function inputSummary(
     filename: string
 ) {
     const summary = `
-    --- Input Summary ---
+--- Input Summary ---
     User Count: ${userCount}
     Message Frequency: ${messageFrequency} milliseconds
     Registration Interval: ${registrationInterval} milliseconds
