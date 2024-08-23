@@ -66,3 +66,8 @@ export function determineDone(params: TestParams, startTime: number, messageAnal
 
     return Object.keys(messageAnalyitics).length === total;
 }
+
+// Thousand separator
+export function formatWithSpaces(x: number): string {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}

@@ -2,7 +2,7 @@ import { MessageData } from 'swarm-decentralized-chat';
 import path from 'path';
 import fs from 'fs';
 import chalk from 'chalk';
-import { calcTimeDiff, RunningAverage } from "./misc.js";
+import { calcTimeDiff, formatWithSpaces, RunningAverage } from "./misc.js";
 import { NodeListElement, UserInfo } from '../types/types.js';
 
 
@@ -42,8 +42,8 @@ export function summary(
         }
         else {
             regTimeAvg.addValue(diff);
-            summaryContent += `      ${username} registered in ${diff} ms. Reconnect count: ${stats.reconnectCount}\n`;
-            console.log(chalk.green(`      ${username} registered in ${chalk.magenta(diff)} ms. Reconnect count: ${chalk.magenta(stats.reconnectCount)}`));
+            summaryContent += `      ${username} registered in ${formatWithSpaces(diff)} ms. Reconnect count: ${stats.reconnectCount}\n`;
+            console.log(chalk.green(`      ${username} registered in ${chalk.magenta(formatWithSpaces(diff))} ms. Reconnect count: ${chalk.magenta(stats.reconnectCount)}`));
         }
         reconnectCountAvg.addValue(stats.reconnectCount);
     }
@@ -55,11 +55,11 @@ export function summary(
     console.log(chalk.green(`      Reconnect count on average: ${chalk.magenta(reconnectCountAvg.getAverage())}`));
     console.log(chalk.green(`      Registration failed for ${chalk.magenta(registrationFailedCount)} users\n\n`));
 
-    if (messageIdAnomaly) summaryContent += `  There were ${messageIdAnomaly} message ID anomalies!`;
-    if (timestampAnomaly) summaryContent += `  There were ${timestampAnomaly} timestamp anomalies!`;
+    if (messageIdAnomaly) summaryContent += `\n      There were ${messageIdAnomaly} message ID anomalies!`;
+    if (timestampAnomaly) summaryContent += `      There were ${timestampAnomaly} timestamp anomalies!`;
 
-    if (messageIdAnomaly) console.log(chalk.gray(`  There were ${chalk.bgRed(messageIdAnomaly)} message ID anomalies!`));
-    if (timestampAnomaly) console.log(chalk.gray(`  There were ${chalk.bgRed(timestampAnomaly)} timestamp anomalies!\n\n`));
+    if (messageIdAnomaly) console.log(chalk.gray(`      There were ${chalk.cyan(messageIdAnomaly)} message ID anomalies!`));
+    if (timestampAnomaly) console.log(chalk.gray(`      There were ${chalk.cyan(timestampAnomaly)} timestamp anomalies!\n\n`));
 
     summaryContent += "\n";
 
