@@ -76,8 +76,7 @@ export async function startChatTest() {
     logger.info(`Done! Now we will wait ${params.registrationInterval} ms before starting registration. \n`);
     await sleep(params.registrationInterval);
 
-    // Some analytics is happening in handle-functions
-    
+    // Read the comments feed periodically    
     readInterval = setInterval(async () => {
         comments = await readComments({
             identifier: topicHex,
@@ -87,6 +86,7 @@ export async function startChatTest() {
         if (comments.length > lastLength) {
             handleMessageReceive(comments.slice(lastLength-1), params, userThreadList);
             lastLength = comments.length;
+            console.log("Comments.length: ", comments.length);
         }
     }, params.readInterval) as unknown as NodeJS.Timeout;
 
@@ -124,6 +124,7 @@ export async function startChatTest() {
 }   
 
 async function handleMessageReceive(newMessages: Comment[], params: TestParams, userThreadList: Worker[]) {
+    console.log("newMessages.length: ", newMessages.length)
     for (let j = 0; j < newMessages.length; j++) {
         const id = generateID(newMessages[j]);
 
@@ -172,7 +173,6 @@ function handleUserThreadEvent(userThread: Worker) {
                     received: 0
                 }
                 totalSentCount++;
-                console.log("Total sent count: ", totalSentCount)
 
                 break;
 
