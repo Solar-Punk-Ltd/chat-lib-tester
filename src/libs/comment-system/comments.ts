@@ -29,6 +29,7 @@ export async function writeComment(comment: CommentRequest, options?: Options) {
     
   } catch (error) {
     console.error("Error while writing comment: ", error);
+    return null;
   }
 }
 

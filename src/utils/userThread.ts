@@ -34,8 +34,18 @@ for (let i = 0; i < params.totalMessageCount; i++) {
         privateKey,
         beeApiUrl: node.url
     }
-    const newComment = await writeComment(comment, options);                            // Send message
-    if (!newComment) throw "Comment write failed."
+    try {
+        const newComment = await writeComment(comment, options);                            // Send message
+        if (!newComment) {
+            throw "Comment write failed."
+        }
+    } catch (error) {
+        parentPort.postMessage({
+            type: UserThreadMessages.ERROR,
+            username,
+            error
+        });
+    }
 
     parentPort.postMessage({                                                            // Signal to main thread that a message was sent
         type: UserThreadMessages.INCREMENT_TOTAL_MESSAGE_COUNT,
