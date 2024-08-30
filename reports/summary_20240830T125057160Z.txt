@@ -1,0 +1,21 @@
+--- Input Summary ---
+    User Count: 3
+    Message Frequency: 2000 milliseconds
+    Read Interval: 6000 milliseconds
+    Registration Interval: 0 milliseconds
+    Total message count (per user): 5
+    UsersFeed write timeout: 20000 milliseconds
+
+--- Node List ---
+    URL: http://161.97.125.121:1733, Stamp: c213a209945d8db83f368809f0ee40567c8e1e9ab8fded8a0549e62b6fd017a5
+
+    Total node count: 1
+
+
+--- Test Summary ---
+
+  -- Message Stats --
+    Average transmission time: 12 s
+    TOTAL RECEIVED / TOTAL SENT: 5 / 15
+
+
