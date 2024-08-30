@@ -18,6 +18,7 @@ export interface NodeListElement {
 export interface TestParams {
     userCount: number;
     messageFrequency: number;
+    readInterval: number;
     registrationInterval: number;
     totalMessageCount: number;
     filename: string;

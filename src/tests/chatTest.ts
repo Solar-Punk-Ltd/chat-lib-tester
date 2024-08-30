@@ -1,10 +1,10 @@
 import { Worker } from 'node:worker_threads';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { BatchId, Bee, Signer, Topic, Utils } from '@ethersphere/bee-js';
+import { BatchId, Bee, Topic } from '@ethersphere/bee-js';
 
 import logger from '../utils/logger.js';
-import { FeedCommitHashList, MessageInfo, NodeListElement, TestParams, UserInfo, UserThreadMessages } from '../types/types.js';
+import { MessageInfo, NodeListElement, TestParams, UserInfo, UserThreadMessages } from '../types/types.js';
 import { generateID, sleep, RunningAverage, determineDone, createSigner } from '../utils/misc.js';
 import { summary, writeNodeInfoToFile } from '../utils/info.js';
 import { getUserInputs } from '../utils/input.js';
@@ -27,7 +27,6 @@ const nodeList: NodeListElement[] = [
 
 let comments: Comment[] = [];
 let messageAnalyitics: MessageInfo = {};
-let userAnalytics: UserInfo = {};
 let startTime = 0;
 let intervalId: NodeJS.Timeout | null = null;                          // Interval to check whether the process is finished or not (if not all messages can be sent)
 let readInterval: NodeJS.Timeout | null = null;                        // Read comments interval
@@ -78,7 +77,6 @@ export async function startChatTest() {
 
     // Some analytics is happening in handle-functions
     
-    const READ_INTERVAL = 5 * 1000;
     readInterval = setInterval(async () => {
         comments = await readComments({
             identifier: topicHex,
@@ -89,7 +87,7 @@ export async function startChatTest() {
             handleMessageReceive(comments.slice(lastLength-1), params, userThreadList);
             lastLength = comments.length;
         }
-    }, READ_INTERVAL) as unknown as NodeJS.Timeout;
+    }, params.readInterval) as unknown as NodeJS.Timeout;
 
     // Stop the test process on timeout as well, not just if all messages were sent
     intervalId = setInterval(() => {
@@ -125,50 +123,43 @@ export async function startChatTest() {
 }   
 
 async function handleMessageReceive(newMessages: Comment[], params: TestParams, userThreadList: Worker[]) {
-    const i = newMessages.length-1;
-    const id = generateID(newMessages[i]);
+    for (let j = 0; j < newMessages.length; j++) {
+        const id = generateID(newMessages[j]);
 
-    // this need to be made a list (FOR LOOP)
-
-    // Take note when the message was received. If message ID can't be found, that's an error.
-    if (!messageAnalyitics[id]) {
-        logger.warn("WARNING! MESSAGE COULD NOT BE FOUND, THIS IS AN ANOMALY!");
-        logger.trace("It seems like message was received before it was sent, or the ID is wrong.");
-        logger.trace(`ID of the message:  ${id}`);
-        messageAnalyitics[id] = {
-            sent: 0,
-            received: Date.now()
+        // Take note when the message was received. If message ID can't be found, that's an error.
+        if (!messageAnalyitics[id]) {
+            logger.warn("WARNING! MESSAGE COULD NOT BE FOUND, THIS IS AN ANOMALY!");
+            logger.trace("It seems like message was received before it was sent, or the ID is wrong.");
+            logger.trace(`ID of the message:  ${id}`);
+            messageAnalyitics[id] = {
+                sent: 0,
+                received: Date.now()
+            }
+            messageAnalyitics[id].received = Date.now();
+            messageIdAnomaly++;
+        } else {
+            messageAnalyitics[id].received = Date.now();
         }
-        messageAnalyitics[id].received = Date.now();
-        messageIdAnomaly++;
-    } else {
-        messageAnalyitics[id].received = Date.now();
+
+        logger.info(`${newMessages[j].data}`);                   // New message
+        
+        // Calculate transmission time. If some of the values does not look like a timestamp, that's an error.
+        if (messageAnalyitics[id].received < 1600000000000 || messageAnalyitics[id].sent < 1600000000000) {
+            logger.warn("WARNING! ANOMALY, received or sent is not correct timestamp");
+            logger.trace(`Received:  ${messageAnalyitics[id].received}`);
+            logger.trace(`Sent:  ${messageAnalyitics[id].sent}`);
+            timestampAnomaly++;
+        } else {
+            const time = messageAnalyitics[id].received - messageAnalyitics[id].sent;
+            transmitAvg.addValue(time);
+            logger.info(`Transmission time: ${time} ms. Average: ${Math.ceil(transmitAvg.getAverage()/1000)} s`);
+        }
+
+        logger.info(`TOTAL RECEIVED / TOTAL SENT: ${comments.length} / ${totalSentCount} \n`);
+    
+        if (determineDone(params, startTime, messageAnalyitics)) 
+            done(userThreadList, params.filename);
     }
-
-    logger.info(`${newMessages[i].data}`);                   // New message
-    //logger.debug(`User count:  ${userList.length}`);
-
-    // Calculate transmission time. If some of the values does not look like a timestamp, that's an error.
-    if (messageAnalyitics[id].received < 1600000000000 || messageAnalyitics[id].sent < 1600000000000) {
-        logger.warn("WARNING! ANOMALY, received or sent is not correct timestamp");
-        logger.trace(`Received:  ${messageAnalyitics[id].received}`);
-        logger.trace(`Sent:  ${messageAnalyitics[id].sent}`);
-        timestampAnomaly++;
-    } else {
-        const time = messageAnalyitics[id].received - messageAnalyitics[id].sent;
-        transmitAvg.addValue(time);
-        logger.info(`Transmission time: ${time} ms. Average: ${Math.ceil(transmitAvg.getAverage()/1000)} s`);
-    }
-
-
-    const uniqueNewMessages = newMessages.filter(
-        (newMsg) => !comments.some((prevMsg) => prevMsg.timestamp === newMsg.timestamp),
-    );
-
-    logger.info(`TOTAL RECEIVED / TOTAL SENT: ${comments.length} / ${totalSentCount} \n`);
-
-    if (determineDone(params, startTime, messageAnalyitics)) 
-        done(userThreadList, params.filename);
 };
 
 function handleUserThreadEvent(userThread: Worker) {
@@ -180,6 +171,7 @@ function handleUserThreadEvent(userThread: Worker) {
                     received: 0
                 }
                 totalSentCount++;
+                console.log("Total sent count: ", totalSentCount)
 
                 break;
 
@@ -214,9 +206,6 @@ async function done(userThreadList: Worker[], filename: string) {
         filename, 
         transmitAvg, 
         comments, 
-        totalSentCount, 
-        userAnalytics,
-        messageIdAnomaly,
-        timestampAnomaly
+        totalSentCount
     );
 }

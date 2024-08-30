@@ -31,13 +31,11 @@ for (let i = 0; i < params.totalMessageCount; i++) {
     const options: Options = {
         stamp,
         identifier,
-        //signer: createSigner(wallet),
         privateKey,
         beeApiUrl: node.url
     }
     const newComment = await writeComment(comment, options);                            // Send message
     if (!newComment) throw "Comment write failed."
-
 
     parentPort.postMessage({                                                            // Signal to main thread that a message was sent
         type: UserThreadMessages.INCREMENT_TOTAL_MESSAGE_COUNT,
