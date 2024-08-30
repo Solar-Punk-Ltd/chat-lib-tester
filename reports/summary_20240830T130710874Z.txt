@@ -1,0 +1,34 @@
+--- Input Summary ---
+    User Count: 8
+    Message Frequency: 2000 milliseconds
+    Registration Interval: 10000 milliseconds
+    Total message count (per user): 10
+    UsersFeed write timeout: 20000 milliseconds
+
+--- Node List ---
+    URL: http://161.97.125.121:1733, Stamp: c213a209945d8db83f368809f0ee40567c8e1e9ab8fded8a0549e62b6fd017a5
+    URL: http://161.97.125.121:1833, Stamp: fd5eab30908e0dea27670aa6379564513de3eefe9de06305653808a8133d0681
+
+    Total node count: 2
+
+
+--- Test Summary ---
+
+  -- Message Stats --
+    Average transmission time: 7 s
+    TOTAL RECEIVED / TOTAL SENT: 76 / 79
+
+  -- User Stats --
+      user-0 registered in 10 350 ms. Reconnect count: 1
+      user-1 registered in 7 756 ms. Reconnect count: 1
+      user-2 registered in 15 577 ms. Reconnect count: 2
+      user-3 registered in 16 570 ms. Reconnect count: 3
+      user-4 registered in 79 323 ms. Reconnect count: 7
+      user-5 registered in 25 532 ms. Reconnect count: 9
+      user-6 registered in 17 994 ms. Reconnect count: 4
+      user-7 registered in 39 879 ms. Reconnect count: 5
+
+      Registration time on average: 26 s
+      Reconnect count on average: 4
+      Registration failed for 0 users
+
