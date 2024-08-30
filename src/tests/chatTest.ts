@@ -20,9 +20,9 @@ const __dirname = path.dirname(__filename);
 // List of Bee nodes, with stamp
 const nodeList: NodeListElement[] = [
     { url: "http://161.97.125.121:1733" , stamp: "c213a209945d8db83f368809f0ee40567c8e1e9ab8fded8a0549e62b6fd017a5" as BatchId },
-    /*{ url: "http://195.88.57.155:1633" ,  stamp: "b4fe81362508d9405e8f67f319e3feb715fb7bef7d2bf14dda046e8f9c3aafbc" as BatchId },
-    { url: "http://161.97.125.121:1833" , stamp: "f85df6e7a755ac09494696c94e66c8f03f2c8efbe1cb4b607e44ad6df047e8cc" as BatchId },
-    { url: "http://161.97.125.121:2033" , stamp: "7093b4457e4443090cb2e8765823a601b3c0165372f8b5bf013cc0f48be4e367" as BatchId }*/
+//    { url: "http://195.88.57.155:1633" ,  stamp: "b4fe81362508d9405e8f67f319e3feb715fb7bef7d2bf14dda046e8f9c3aafbc" as BatchId },
+    { url: "http://161.97.125.121:1833" , stamp: "fd5eab30908e0dea27670aa6379564513de3eefe9de06305653808a8133d0681" as BatchId },
+//    { url: "http://161.97.125.121:2033" , stamp: "7093b4457e4443090cb2e8765823a601b3c0165372f8b5bf013cc0f48be4e367" as BatchId }
 ];
 
 let comments: Comment[] = [];
