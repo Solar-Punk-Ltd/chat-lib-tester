@@ -1,5 +1,5 @@
-import { Comment } from '../model/comment.model'
-import { isString } from './general.assert'
+import { Comment } from '../model/comment.model.js'
+import { isString } from './general.assert.js'
 
 export function isComment(obj: unknown): obj is Comment {
   const { user, data } = (obj || {}) as Comment

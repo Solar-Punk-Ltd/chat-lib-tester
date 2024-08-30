@@ -1,10 +1,10 @@
 import { Bee } from '@ethersphere/bee-js'
 import { ZeroHash } from 'ethers'
-import { Comment, CommentRequest } from './model/comment.model'
-import { getAddressFromIdentifier, getIdentifierFromUrl, getPrivateKeyFromIdentifier } from './uitls/url'
-import { isComment } from './asserts/models.assert'
-import { numberToFeedIndex } from './uitls/feeds'
-import { Options } from './model/options.model'
+import { Comment, CommentRequest } from './model/comment.model.js'
+import { getAddressFromIdentifier, getIdentifierFromUrl, getPrivateKeyFromIdentifier } from './uitls/url.js'
+import { isComment } from './asserts/models.assert.js'
+import { numberToFeedIndex } from './uitls/feeds.js'
+import { Options } from './model/options.model.js'
 
 
 export async function writeComment(comment: CommentRequest, options?: Options) {

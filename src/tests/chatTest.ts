@@ -132,7 +132,7 @@ async function handleMessageReceive(newMessages: Comment[], params: TestParams, 
     const i = newMessages.length-1;
     const id = generateID(newMessages[i]);
 
-    // this need to be made a list
+    // this need to be made a list (FOR LOOP)
 
     // Take note when the message was received. If message ID can't be found, that's an error.
     if (!messageAnalyitics[id]) {

@@ -4,13 +4,18 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@ethersphere/bee-js@6.9.1':
+    hash: 6s5zrons3h6hmhsvifjiyd72mi
+    path: patches/@ethersphere__bee-js@6.9.1.patch
+
 importers:
 
   .:
     dependencies:
       '@ethersphere/bee-js':
         specifier: ^6.9.1
-        version: 6.9.1
+        version: 6.9.1(patch_hash=6s5zrons3h6hmhsvifjiyd72mi)
       '@types/readline-sync':
         specifier: ^1.4.8
         version: 1.4.8
@@ -39,6 +44,9 @@ importers:
       '@types/lodash':
         specifier: ^4.17.7
         version: 4.17.7
+      '@types/node':
+        specifier: '18'
+        version: 18.15.13
       '@types/pino':
         specifier: ^7.0.5
         version: 7.0.5
@@ -169,8 +177,8 @@ packages:
   '@types/node@18.15.13':
     resolution: {integrity: sha512-N+0kuo9KgrUQ1Sn/ifDXsvg0TTleP7rIy4zOBGECxAljqvqfqpTfzx0Q1NUedOixRMBfe2Whhb056a42cWs26Q==}
 
-  '@types/node@22.5.0':
-    resolution: {integrity: sha512-DkFrJOe+rfdHTqqMg0bSNlGlQ85hSoh2TPzZyhHsXnMtligRWpxUySiyw8FY14ITt24HVCiQPWxS3KO/QlGmWg==}
+  '@types/node@22.5.1':
+    resolution: {integrity: sha512-KkHsxej0j9IW1KKOOAA/XBA0z08UFSrRQHErzEfA3Vgq57eXIMYboIlHJuYIfd+lwCQjtKqUu3UnmKbtUc9yRw==}
 
   '@types/pino-pretty@5.0.0':
     resolution: {integrity: sha512-N1uzqSzioqz8R3AkDbSJwcfDWeI3YMPNapSQQhnB2ISU4NYgUIcAh+hYT5ygqBM+klX4htpEhXMmoJv3J7GrdA==}
@@ -403,8 +411,8 @@ packages:
   safe-buffer@5.2.1:
     resolution: {integrity: sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==}
 
-  safe-stable-stringify@2.4.3:
-    resolution: {integrity: sha512-e2bDA2WJT0wxseVd4lsDP4+3ONX6HpMXQa1ZhFQ7SU+GjvORCmShbCMltrtIDfkYhVHrOcPtj+KhmDBdPdZD1g==}
+  safe-stable-stringify@2.5.0:
+    resolution: {integrity: sha512-b3rppTKm9T+PsVCBEOUR46GWI7fdOs00VKZ1+9c1EWDaDMvjQc6tUwuFyIprgGgTcWoVHSKrU8H31ZHA2e0RHA==}
     engines: {node: '>=10'}
 
   scrypt-js@3.0.1:
@@ -499,7 +507,7 @@ snapshots:
 
   '@adraffy/ens-normalize@1.10.1': {}
 
-  '@ethersphere/bee-js@6.9.1':
+  '@ethersphere/bee-js@6.9.1(patch_hash=6s5zrons3h6hmhsvifjiyd72mi)':
     dependencies:
       '@ethersphere/swarm-cid': 0.1.0
       '@types/readable-stream': 2.3.15
@@ -792,7 +800,7 @@ snapshots:
 
   '@types/node@18.15.13': {}
 
-  '@types/node@22.5.0':
+  '@types/node@22.5.1':
     dependencies:
       undici-types: 6.19.8
 
@@ -806,7 +814,7 @@ snapshots:
 
   '@types/readable-stream@2.3.15':
     dependencies:
-      '@types/node': 22.5.0
+      '@types/node': 22.5.1
       safe-buffer: 5.1.2
 
   '@types/readline-sync@1.4.8': {}
@@ -1032,7 +1040,7 @@ snapshots:
       process-warning: 4.0.0
       quick-format-unescaped: 4.0.4
       real-require: 0.2.0
-      safe-stable-stringify: 2.4.3
+      safe-stable-stringify: 2.5.0
       sonic-boom: 4.0.1
       thread-stream: 3.1.0
 
@@ -1065,7 +1073,7 @@ snapshots:
 
   safe-buffer@5.2.1: {}
 
-  safe-stable-stringify@2.4.3: {}
+  safe-stable-stringify@2.5.0: {}
 
   scrypt-js@3.0.1: {}
 
@@ -1087,7 +1095,7 @@ snapshots:
 
   swarm-decentralized-chat@file:../swarm-decentralized-chat:
     dependencies:
-      '@ethersphere/bee-js': 6.9.1
+      '@ethersphere/bee-js': 6.9.1(patch_hash=6s5zrons3h6hmhsvifjiyd72mi)
       ethers: 5.7.2
       pino: 9.3.2
       pino-pretty: 11.2.2

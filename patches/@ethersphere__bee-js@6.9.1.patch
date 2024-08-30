@@ -1,0 +1,11 @@
+diff --git a/dist/mjs/utils/http.js b/dist/mjs/utils/http.js
+index dc925cf2378b288ef19e153ba3d7292e108ac7a0..49755dbe6159f9ecacfd06f25510706e9d2bfbbd 100644
+--- a/dist/mjs/utils/http.js
++++ b/dist/mjs/utils/http.js
+@@ -1,4 +1,5 @@
+-import axios, { AxiosError } from 'axios';
++import axios from 'axios';
++const { AxiosError } = axios;
+ import { Objects, Strings } from 'cafe-utility';
+ import { BeeResponseError } from "../index.js";
+ export const DEFAULT_HTTP_CONFIG = {
