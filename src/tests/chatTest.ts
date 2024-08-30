@@ -1,20 +1,17 @@
 import { Worker } from 'node:worker_threads';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { BatchId } from '@ethersphere/bee-js';
-import { ethers } from 'ethers';
-
-import { 
-    MessageData,
-    EVENTS,
-    SwarmChat,
-} from 'swarm-decentralized-chat';
+import { BatchId, Bee, Signer, Topic, Utils } from '@ethersphere/bee-js';
 
 import logger from '../utils/logger.js';
 import { FeedCommitHashList, MessageInfo, NodeListElement, TestParams, UserInfo, UserThreadMessages } from '../types/types.js';
 import { generateID, sleep, RunningAverage, determineDone } from '../utils/misc.js';
 import { summary, writeNodeInfoToFile } from '../utils/info.js';
 import { getUserInputs } from '../utils/input.js';
+import { ethers } from 'ethers';
+import { readComments } from '../libs/comment-system/comments.js';
+import { EthAddress } from 'swarm-decentralized-chat';
+import { Comment } from '../libs/comment-system/model/comment.model.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,11 +25,13 @@ const nodeList: NodeListElement[] = [
     { url: "http://161.97.125.121:2033" , stamp: "7093b4457e4443090cb2e8765823a601b3c0165372f8b5bf013cc0f48be4e367" as BatchId }
 ];
 
-let messages: MessageData[] = [];
+let comments: Comment[] = [];
 let messageAnalyitics: MessageInfo = {};
 let userAnalytics: UserInfo = {};
 let startTime = 0;
 let intervalId: NodeJS.Timeout | null = null;                          // Interval to check whether the process is finished or not (if not all messages can be sent)
+let readInterval: NodeJS.Timeout | null = null;                        // Read comments interval
+let lastLength = 0;                                                    // Last comment list length
 let totalSentCount = 0;
 let feedCommitHashList: FeedCommitHashList = {};
 const transmitAvg: RunningAverage = new RunningAverage(1000);
@@ -41,61 +40,80 @@ let timestampAnomaly = 0;
 let isDone = false;
 const usersFeedTimeout = 20000;                                        // 20 seconds. This is not prompted from the user, but it could be. Will be visible in stats.
 
+const names = ["Alice", "Bob", "Carol", "Dave", "Eve", "Frank", "Gina", "Hannah", "Iza", "Jasmin", "Kate", "Laura", "Mina", "Ophelia", "Petra", "Quintina", "Rita", "Sabina", "Tina", "Una", "Viola", "Wendy", "Xenia"];
+
 
 // The main chat test, currently this is the only one, but probably there will be more
 export async function startChatTest() {
     const topic = `Chat-Library-Test-${Math.floor(Math.random() * 10000)}`;
     const userThreadList: Worker[] = [];
 
+    const bee = new Bee(nodeList[0].url);
+
     const params = getUserInputs(usersFeedTimeout);
     writeNodeInfoToFile(params.filename, nodeList);
 
     // Generate a list of private keys, each associated to a user
-    const walletList = [];
+    const userList = [];
     for (let i = 0; i < params.userCount; i++) {
-        const wallet = ethers.Wallet.createRandom();
-        walletList.push(wallet);
+        userList.push(names[i]);
     }
+
+    // Create Signer for Griffiti feed
+    const wallet = ethers.Wallet.createRandom();
+    const signer: Signer = {
+        address: Utils.hexToBytes(wallet.address.slice(2)),
+        sign: async (data: any) => {
+          return await wallet.signMessage(data);
+        },
+    };
 
     // Create the chat room
     logger.info("Creating chat room...");
-    const chat = new SwarmChat({ url: nodeList[0].url, usersFeedTimeout, logLevel: "warn" });
-    chat.initChatRoom(topic, nodeList[0].stamp);
+    const topicHex: Topic = bee.makeFeedTopic(topic)
+    await bee.createFeedManifest(
+      nodeList[0].stamp,
+      "sequence",
+      topicHex,
+      signer.address
+    );
     startTime = Date.now();
     logger.info(`Done! Now we will wait ${params.registrationInterval} ms before starting registration. \n`);
     await sleep(params.registrationInterval);
 
-    // This user (on the main thread), will only read messages, and create stats based on that
-    chat.startUserFetchProcess(topic);
-    chat.startMessageFetchProcess(topic);
-    const { on } = chat.getChatActions();
-
     // Some analytics is happening in handle-functions
-    on(EVENTS.RECEIVE_MESSAGE, async (newMessages: MessageData[]) => {
-        handleMessageReceive(chat, newMessages, params, userThreadList);
-    });
-    on(EVENTS.USER_REGISTERED, handleUserRegistered);
+    
+    const READ_INTERVAL = 5 * 1000;
+    readInterval = setInterval(async () => {
+        comments = await readComments({
+            identifier: topicHex,
+            beeApiUrl: nodeList[0].url,
+            approvedFeedAddress: signer.address as unknown as EthAddress
+        });
+        if (comments.length > lastLength) {
+            handleMessageReceive(comments.slice(lastLength-1), params, userThreadList);
+            lastLength = comments.length;
+        }
+    }, READ_INTERVAL) as unknown as NodeJS.Timeout;
 
     // Stop the test process on timeout as well, not just if all messages were sent
     intervalId = setInterval(() => {
         if (determineDone(params, startTime, messageAnalyitics))
-            done(chat, userThreadList, params.filename);
-    }, 15 * 1000);
+            done(userThreadList, params.filename);
+    }, 15 * 1000) as unknown as NodeJS.Timeout;
     
     // This are the users, who are registering, and writing messages, each has a separate Worker thread
     logger.info("Registering users...");
-    for (let i = 0; i < walletList.length; i++) {
+    for (let i = 0; i < userList.length; i++) {
         const nodeIndex = i % nodeList.length;      // This will cycle through nodeList indices
         const userThread = new Worker(path.resolve(__dirname, '../utils/userThread.js'), {
             workerData: {
-                topic,
+                identifier: topicHex,
                 params,
-                address: walletList[i].address,
-                privateKey: walletList[i].privateKey,
+                username: userList[i],
+                signer,
                 node: nodeList[nodeIndex].url,
-                usersFeedTimeout,
                 stamp: nodeList[nodeIndex].stamp,
-                username: `user-${i}`
             },
             stdout: false,
             stderr: false
@@ -104,15 +122,17 @@ export async function startChatTest() {
         // Handle the messages (notifications) that are coming from Worker threads
         handleUserThreadEvent(userThread);
         
-        if (i < walletList.length-1) logger.info(`Waiting ${params.registrationInterval} ms until next user registration...`); 
+        if (i < userList.length-1) logger.info(`Waiting ${params.registrationInterval} ms until next user registration...`); 
         await sleep(params.registrationInterval);
         userThreadList.push(userThread);
     };
 }   
 
-async function handleMessageReceive(chat: SwarmChat, newMessages: MessageData[], params: TestParams, userThreadList: Worker[]) {
+async function handleMessageReceive(newMessages: Comment[], params: TestParams, userThreadList: Worker[]) {
     const i = newMessages.length-1;
     const id = generateID(newMessages[i]);
+
+    // this need to be made a list
 
     // Take note when the message was received. If message ID can't be found, that's an error.
     if (!messageAnalyitics[id]) {
@@ -129,8 +149,8 @@ async function handleMessageReceive(chat: SwarmChat, newMessages: MessageData[],
         messageAnalyitics[id].received = Date.now();
     }
 
-    logger.info(`${newMessages[i].message}`);                   // New message
-    logger.debug(`User count:  ${chat.getUserCount()}`);
+    logger.info(`${newMessages[i].data}`);                   // New message
+    //logger.debug(`User count:  ${userList.length}`);
 
     // Calculate transmission time. If some of the values does not look like a timestamp, that's an error.
     if (messageAnalyitics[id].received < 1600000000000 || messageAnalyitics[id].sent < 1600000000000) {
@@ -146,25 +166,14 @@ async function handleMessageReceive(chat: SwarmChat, newMessages: MessageData[],
 
 
     const uniqueNewMessages = newMessages.filter(
-        (newMsg) => !messages.some((prevMsg) => prevMsg.timestamp === newMsg.timestamp),
+        (newMsg) => !comments.some((prevMsg) => prevMsg.timestamp === newMsg.timestamp),
     );
-    messages = chat.orderMessages([...messages, ...uniqueNewMessages]);
 
-    logger.info(`TOTAL RECEIVED / TOTAL SENT: ${messages.length} / ${totalSentCount} \n`);
+    logger.info(`TOTAL RECEIVED / TOTAL SENT: ${comments.length} / ${totalSentCount} \n`);
 
     if (determineDone(params, startTime, messageAnalyitics)) 
-        done(chat, userThreadList, params.filename);
+        done(userThreadList, params.filename);
 };
-
-function handleUserRegistered(username: string) {
-    if (userAnalytics[username].registrationSuccess) {
-        // This is a reconnect
-        return;
-    } else {
-        // This is a register event
-        userAnalytics[username].registrationSuccess = Date.now();
-    }
-}
 
 function handleUserThreadEvent(userThread: Worker) {
     userThread.on("message", (messageFromThread) => {
@@ -175,35 +184,6 @@ function handleUserThreadEvent(userThread: Worker) {
                     received: 0
                 }
                 totalSentCount++;
-
-                break;
-
-            case UserThreadMessages.USER_REGISTERED:
-                userAnalytics[messageFromThread.username] = {
-                    registrationStarted: messageFromThread.timestamp,
-                    registrationSuccess: 0,
-                    reconnectTimes: [],
-                    reconnectCount: 0
-                }
-
-                break;
-
-            case UserThreadMessages.USER_RECONNECTED:
-                userAnalytics[messageFromThread.username].reconnectTimes.push(messageFromThread.timestamp);
-                userAnalytics[messageFromThread.username].reconnectCount++;
-
-                break;
-
-            case UserThreadMessages.HASH_RECEIVED:
-                if (feedCommitHashList[messageFromThread.hash]) {
-                    feedCommitHashList[messageFromThread.hash].count++;
-                } else {
-                    feedCommitHashList[messageFromThread.hash] = {
-                        count: 1
-                    }
-                }
-                logger.trace("Hash list with counts: ");
-                Object.keys(feedCommitHashList).forEach((key) => logger.trace(`${key}: ${feedCommitHashList[key].count}`));
 
                 break;
 
@@ -219,7 +199,7 @@ function handleUserThreadEvent(userThread: Worker) {
     });
 }
 
-async function done(chat: SwarmChat, userThreadList: Worker[], filename: string) {
+async function done(userThreadList: Worker[], filename: string) {
     if (intervalId) clearInterval(intervalId);                      // Stop the timeout interval
     else return;
     
@@ -232,14 +212,12 @@ async function done(chat: SwarmChat, userThreadList: Worker[], filename: string)
         (await userThreadList[k]).terminate();
     }
 
-    chat.stopMessageFetchProcess();                                 // Stop periodically fetching messages
-    chat.stopUserFetchProcess();                                    // and Users feed updates
     await sleep(1000);
 
     summary(
         filename, 
         transmitAvg, 
-        messages, 
+        comments, 
         totalSentCount, 
         userAnalytics,
         messageIdAnomaly,

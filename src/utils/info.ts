@@ -1,15 +1,15 @@
-import { MessageData } from 'swarm-decentralized-chat';
 import path from 'path';
 import fs from 'fs';
 import chalk from 'chalk';
 import { calcTimeDiff, formatWithSpaces, RunningAverage } from "./misc.js";
 import { NodeListElement, UserInfo } from '../types/types.js';
+import { Comment } from '../libs/comment-system/model/comment.model.js';
 
 
 export function summary(
     filename: string,
     transmitAvg: RunningAverage,
-    messages: MessageData[],
+    messages: Comment[],
     totalSentCount: number,
     userAnalytics: UserInfo,
     messageIdAnomaly: number,

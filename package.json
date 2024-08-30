@@ -13,7 +13,7 @@
     "@ethersphere/bee-js": "^6.9.1",
     "@types/readline-sync": "^1.4.8",
     "chalk": "^5.3.0",
-    "ethers": "^5.7.2",
+    "ethers": "^6.13.2",
     "pino": "^9.3.2",
     "pino-pretty": "^11.2.2",
     "readline-sync": "^1.4.10",

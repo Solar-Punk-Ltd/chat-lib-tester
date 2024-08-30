@@ -1,4 +1,4 @@
-import { MessageData } from "swarm-decentralized-chat";
+import { CommentRequest } from "../libs/comment-system/model/comment.model.js";
 import { MessageInfo, TestParams } from "../types/types.js";
 import logger from "./logger.js";
 
@@ -10,8 +10,8 @@ export function sleep(delay: number) {
 }
 
 // Each message has an ID
-export function generateID(message: MessageData): string {
-    return message.address + message.timestamp;
+export function generateID(message: CommentRequest): string {
+    return message.user + message.timestamp;
 }
 
 // A class for handling averages, constructor accepts a max value (array length)
