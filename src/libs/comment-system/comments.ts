@@ -10,7 +10,7 @@ import { Options } from './model/options.model.js'
 export async function writeComment(comment: CommentRequest, options?: Options) {
   try {
     if (!options) return;
-    const { identifier, stamp, beeApiUrl, signer } = options
+    const { identifier, stamp, beeApiUrl, privateKey } = options
     if (!stamp) return;
   
     const bee = new Bee(beeApiUrl || "http://localhost:1633")
@@ -21,13 +21,9 @@ export async function writeComment(comment: CommentRequest, options?: Options) {
     }
   
     const { reference } = await bee.uploadData(stamp, JSON.stringify(commentObject))
-    console.log("Data upload successful: ", reference)
-    console.log("Signer", signer)
-    const feedWriter = bee.makeFeedWriter('sequence', identifier || ZeroHash, signer)
-    console.log("feedWriter made: ", feedWriter)
+    const feedWriter = bee.makeFeedWriter('sequence', identifier || ZeroHash, privateKey)
   
-    const r = await feedWriter.upload(stamp, reference);
-    console.log("feed updated: ", r)
+    await feedWriter.upload(stamp, reference);
 
     return commentObject;
     

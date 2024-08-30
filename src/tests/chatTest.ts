@@ -5,10 +5,10 @@ import { BatchId, Bee, Signer, Topic, Utils } from '@ethersphere/bee-js';
 
 import logger from '../utils/logger.js';
 import { FeedCommitHashList, MessageInfo, NodeListElement, TestParams, UserInfo, UserThreadMessages } from '../types/types.js';
-import { generateID, sleep, RunningAverage, determineDone } from '../utils/misc.js';
+import { generateID, sleep, RunningAverage, determineDone, createSigner } from '../utils/misc.js';
 import { summary, writeNodeInfoToFile } from '../utils/info.js';
 import { getUserInputs } from '../utils/input.js';
-import { ethers } from 'ethers';
+import { ethers, HDNodeWallet } from 'ethers';
 import { readComments } from '../libs/comment-system/comments.js';
 import { EthAddress } from 'swarm-decentralized-chat';
 import { Comment } from '../libs/comment-system/model/comment.model.js';
@@ -19,10 +19,10 @@ const __dirname = path.dirname(__filename);
 
 // List of Bee nodes, with stamp
 const nodeList: NodeListElement[] = [
-    { url: "http://195.88.57.155:1633" ,  stamp: "b4fe81362508d9405e8f67f319e3feb715fb7bef7d2bf14dda046e8f9c3aafbc" as BatchId },
-    { url: "http://161.97.125.121:1733" , stamp: "1f191134439c1810da0ef41f4decb176b931377f0a66f9eba41a40308a62d8c5" as BatchId },
+    { url: "http://161.97.125.121:1733" , stamp: "c213a209945d8db83f368809f0ee40567c8e1e9ab8fded8a0549e62b6fd017a5" as BatchId },
+    /*{ url: "http://195.88.57.155:1633" ,  stamp: "b4fe81362508d9405e8f67f319e3feb715fb7bef7d2bf14dda046e8f9c3aafbc" as BatchId },
     { url: "http://161.97.125.121:1833" , stamp: "f85df6e7a755ac09494696c94e66c8f03f2c8efbe1cb4b607e44ad6df047e8cc" as BatchId },
-    { url: "http://161.97.125.121:2033" , stamp: "7093b4457e4443090cb2e8765823a601b3c0165372f8b5bf013cc0f48be4e367" as BatchId }
+    { url: "http://161.97.125.121:2033" , stamp: "7093b4457e4443090cb2e8765823a601b3c0165372f8b5bf013cc0f48be4e367" as BatchId }*/
 ];
 
 let comments: Comment[] = [];
@@ -33,7 +33,6 @@ let intervalId: NodeJS.Timeout | null = null;                          // Interv
 let readInterval: NodeJS.Timeout | null = null;                        // Read comments interval
 let lastLength = 0;                                                    // Last comment list length
 let totalSentCount = 0;
-let feedCommitHashList: FeedCommitHashList = {};
 const transmitAvg: RunningAverage = new RunningAverage(1000);
 let messageIdAnomaly = 0;
 let timestampAnomaly = 0;
@@ -60,13 +59,9 @@ export async function startChatTest() {
     }
 
     // Create Signer for Griffiti feed
-    const wallet = ethers.Wallet.createRandom();
-    const signer: Signer = {
-        address: Utils.hexToBytes(wallet.address.slice(2)),
-        sign: async (data: any) => {
-          return await wallet.signMessage(data);
-        },
-    };
+    const privkey = ethers.Wallet.createRandom().privateKey;
+    const wallet = new ethers.Wallet(privkey);
+    const signer = createSigner(wallet);
 
     // Create the chat room
     logger.info("Creating chat room...");
@@ -111,8 +106,9 @@ export async function startChatTest() {
                 identifier: topicHex,
                 params,
                 username: userList[i],
-                signer,
-                node: nodeList[nodeIndex].url,
+                //wallet,
+                privateKey: privkey,
+                node: nodeList[nodeIndex],
                 stamp: nodeList[nodeIndex].stamp,
             },
             stdout: false,

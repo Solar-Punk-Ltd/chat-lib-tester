@@ -1,6 +1,8 @@
+import { ethers, HDNodeWallet } from "ethers";
 import { CommentRequest } from "../libs/comment-system/model/comment.model.js";
 import { MessageInfo, TestParams } from "../types/types.js";
 import logger from "./logger.js";
+import { Signer, Utils } from "@ethersphere/bee-js";
 
 // General sleep function, usage: await sleep(ms)
 export function sleep(delay: number) {
@@ -17,7 +19,7 @@ export function generateID(message: CommentRequest): string {
 // A class for handling averages, constructor accepts a max value (array length)
 export class RunningAverage {
     private maxSize: number;
-    private values: number[];
+    private values: number[];    
     private sum: number;
   
     constructor(maxSize: number) {
@@ -70,4 +72,15 @@ export function determineDone(params: TestParams, startTime: number, messageAnal
 // Thousand separator
 export function formatWithSpaces(x: number): string {
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
+// Create Signer
+export function createSigner(wallet: ethers.Wallet): Signer {
+    const signer: Signer = {
+        address: Utils.hexToBytes(wallet.address.slice(2)),
+        sign: async (data: any) => {
+          return await wallet.signMessage(data);
+        },
+    };
+    return signer;
 }

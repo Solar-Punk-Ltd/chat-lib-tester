@@ -1,5 +1,5 @@
 import { parentPort, workerData } from 'node:worker_threads';
-import { generateID, sleep } from './misc.js';
+import { createSigner, generateID, sleep } from './misc.js';
 import { UserThreadMessages } from '../types/types.js';
 import logger from '../utils/logger.js';
 import { writeComment } from '../libs/comment-system/comments.js';
@@ -13,10 +13,11 @@ const {
     identifier, 
     params, 
     username,
-    signer,
+    privateKey,
     node,
     stamp, 
 } = workerData;
+
 
 // Send messages
 for (let i = 0; i < params.totalMessageCount; i++) {
@@ -30,7 +31,8 @@ for (let i = 0; i < params.totalMessageCount; i++) {
     const options: Options = {
         stamp,
         identifier,
-        signer,
+        //signer: createSigner(wallet),
+        privateKey,
         beeApiUrl: node.url
     }
     const newComment = await writeComment(comment, options);                            // Send message
