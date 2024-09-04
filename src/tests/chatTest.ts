@@ -20,12 +20,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 
-// List of Bee nodes, with stamp
 const nodeList: NodeListElement[] = [
-    //{ url: "http://195.88.57.155:1633" ,  stamp: "b4fe81362508d9405e8f67f319e3feb715fb7bef7d2bf14dda046e8f9c3aafbc" as BatchId },
-    { url: "http://161.97.125.121:1733" , stamp: "c213a209945d8db83f368809f0ee40567c8e1e9ab8fded8a0549e62b6fd017a5" as BatchId },
-    { url: "http://161.97.125.121:1833" , stamp: "fd5eab30908e0dea27670aa6379564513de3eefe9de06305653808a8133d0681" as BatchId },
-    //{ url: "http://161.97.125.121:2033" , stamp: "7093b4457e4443090cb2e8765823a601b3c0165372f8b5bf013cc0f48be4e367" as BatchId }
+    { url: "http://161.97.125.121:1733" , stamp: "359a634638ab163e12b8023de3526c6db1ff5173b6130d18bae951527dc3558b" as BatchId },
+    { url: "http://161.97.125.121:1833" , stamp: "12a0b84868322d72ffc29da6ef349d88906b3726c0b8e270953ae08a19564481" as BatchId },
+    { url: "http://161.97.125.121:2033" , stamp: "1ac621d13a31581b30473ccaad2e7732bf1e9d532221617919f392e2673f40f2" as BatchId },
+    { url: "http://161.97.125.121:2133" , stamp: "108246a818223087d419bbde9da514806f57672b3ee649d4f4f18ea922258115" as BatchId },
+    { url: "http://161.97.125.121:2233" , stamp: "f4a05c6299d510fa1d9880c7cb24440889f03f8d21543e9bbf95e4f0e1f7957b" as BatchId },
+    { url: "http://161.97.125.121:2333" , stamp: "d8f621e85875710a7ae8eec5409e87c58c872a016a3cfea329ce61280f961e97" as BatchId },
+    { url: "http://161.97.125.121:2433" , stamp: "36d3483b9a643e777b8a85c4636dc76a4fb93476087385f29f00f14783a21455" as BatchId },
+    //    { url: "http://195.88.57.155:1633" ,  stamp: "b4fe81362508d9405e8f67f319e3feb715fb7bef7d2bf14dda046e8f9c3aafbc" as BatchId },
 ];
 
 let messages: MessageData[] = [];
@@ -59,7 +62,7 @@ export async function startChatTest() {
 
     // Create the chat room
     logger.info("Creating chat room...");
-    const chat = new SwarmChat({ url: nodeList[0].url, usersFeedTimeout, logLevel: "warn" });
+    const chat = new SwarmChat({ url: nodeList[0].url, usersFeedTimeout, logLevel: "warn", idleTime: 10 * 60 * 1000 });
     chat.initChatRoom(topic, nodeList[0].stamp);
     startTime = Date.now();
     logger.info(`Done! Now we will wait ${params.registrationInterval} ms before starting registration. \n`);

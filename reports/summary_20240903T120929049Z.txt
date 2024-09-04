@@ -1,0 +1,79 @@
+--- Input Summary ---
+    User Count: 48
+    Message Frequency: 15000 milliseconds
+    Registration Interval: 30000 milliseconds
+    Total message count (per user): 10
+    UsersFeed write timeout: 20000 milliseconds
+
+--- Node List ---
+    URL: http://161.97.125.121:1733, Stamp: 359a634638ab163e12b8023de3526c6db1ff5173b6130d18bae951527dc3558b
+    URL: http://161.97.125.121:1833, Stamp: 12a0b84868322d72ffc29da6ef349d88906b3726c0b8e270953ae08a19564481
+    URL: http://161.97.125.121:2033, Stamp: 1ac621d13a31581b30473ccaad2e7732bf1e9d532221617919f392e2673f40f2
+    URL: http://161.97.125.121:2133, Stamp: 108246a818223087d419bbde9da514806f57672b3ee649d4f4f18ea922258115
+    URL: http://161.97.125.121:2233, Stamp: f4a05c6299d510fa1d9880c7cb24440889f03f8d21543e9bbf95e4f0e1f7957b
+    URL: http://161.97.125.121:2333, Stamp: d8f621e85875710a7ae8eec5409e87c58c872a016a3cfea329ce61280f961e97
+    URL: http://161.97.125.121:2433, Stamp: 36d3483b9a643e777b8a85c4636dc76a4fb93476087385f29f00f14783a21455
+
+    Total node count: 7
+
+
+--- Test Summary ---
+
+  -- Message Stats --
+    Average transmission time: 17 s
+    TOTAL RECEIVED / TOTAL SENT: 128 / 340
+
+  -- User Stats --
+      user-0 registered in 12 170 ms. Reconnect count: 0
+      user-1 registered in 7 189 ms. Reconnect count: 0
+      user-2 registered in 38 464 ms. Reconnect count: 1
+      user-3 registered in 148 223 ms. Reconnect count: 3
+      user-4 registered in 7 537 ms. Reconnect count: 1
+      user-7 registered in 10 037 ms. Reconnect count: 1
+      user-8 registered in 7 533 ms. Reconnect count: 1
+      user-9 registered in 99 948 ms. Reconnect count: 2
+      user-5 failed to register. Reconnect count: 4
+      user-10 registered in 6 881 ms. Reconnect count: 1
+      user-6 failed to register. Reconnect count: 4
+      user-11 registered in 117 956 ms. Reconnect count: 5
+      user-14 registered in 106 802 ms. Reconnect count: 5
+      user-15 registered in 43 896 ms. Reconnect count: 6
+      user-16 registered in 7 127 ms. Reconnect count: 6
+      user-12 failed to register. Reconnect count: 4
+      user-17 registered in 7 416 ms. Reconnect count: 6
+      user-13 failed to register. Reconnect count: 4
+      user-18 registered in 315 018 ms. Reconnect count: 7
+      user-21 registered in 79 943 ms. Reconnect count: 10
+      user-22 registered in 16 163 ms. Reconnect count: 10
+      user-23 failed to register. Reconnect count: 8
+      user-19 failed to register. Reconnect count: 3
+      user-24 registered in 173 601 ms. Reconnect count: 9
+      user-20 failed to register. Reconnect count: 3
+      user-25 registered in 48 028 ms. Reconnect count: 8
+      user-28 registered in 41 665 ms. Reconnect count: 9
+      user-29 registered in 47 697 ms. Reconnect count: 9
+      user-30 registered in 208 658 ms. Reconnect count: 10
+      user-26 failed to register. Reconnect count: 2
+      user-31 registered in 56 344 ms. Reconnect count: 9
+      user-27 failed to register. Reconnect count: 2
+      user-32 registered in 155 309 ms. Reconnect count: 10
+      user-35 registered in 20 520 ms. Reconnect count: 9
+      user-36 registered in 188 681 ms. Reconnect count: 8
+      user-37 registered in 70 382 ms. Reconnect count: 8
+      user-38 registered in 68 809 ms. Reconnect count: 8
+      user-33 failed to register. Reconnect count: 2
+      user-34 failed to register. Reconnect count: 2
+      user-39 registered in 160 065 ms. Reconnect count: 7
+      user-42 registered in 150 321 ms. Reconnect count: 6
+      user-43 registered in 78 265 ms. Reconnect count: 5
+      user-40 failed to register. Reconnect count: 1
+      user-44 registered in 67 873 ms. Reconnect count: 5
+      user-45 failed to register. Reconnect count: 4
+      user-41 failed to register. Reconnect count: 1
+      user-46 failed to register. Reconnect count: 4
+      user-47 failed to register. Reconnect count: 0
+
+      Registration time on average: 80 s
+      Reconnect count on average: 4.854166666666667
+      Registration failed for 16 users
+
