@@ -1,0 +1,46 @@
+--- Input Summary ---
+    User Count: 16
+    Message Frequency: 2000 milliseconds
+    Registration Interval: 15000 milliseconds
+    Total message count (per user): 20
+    UsersFeed write timeout: 20000 milliseconds
+
+--- Node List ---
+    URL: http://161.97.125.121:1733, Stamp: 9a478f8f6ac0f2882654a1b81680ee021fbc8bcb5280d5342326d1d766b085fa
+    URL: http://161.97.125.121:1833, Stamp: 29644f86cf8624bbc8c60fc27415531053b248cc5b85137775c4c0c61c6cec55
+
+    Total node count: 2
+
+
+--- Test Summary ---
+
+  -- Message Stats --
+    Average transmission time: 39 s
+    TOTAL RECEIVED / TOTAL SENT: 114 / 126
+
+  -- User Stats --
+      user-0 registered in 6 351 ms. Reconnect count: 0
+      user-1 registered in 6 348 ms. Reconnect count: 0
+      user-2 registered in 7 578 ms. Reconnect count: 1
+      user-3 registered in 6 154 ms. Reconnect count: 2
+      user-4 registered in 5 738 ms. Reconnect count: 2
+      user-5 registered in 38 656 ms. Reconnect count: 3
+      user-6 registered in 14 572 ms. Reconnect count: 3
+      user-7 registered in 14 550 ms. Reconnect count: 3
+      user-8 registered in 10 119 ms. Reconnect count: 2
+      user-9 registered in 43 263 ms. Reconnect count: 3
+      user-10 registered in 10 713 ms. Reconnect count: 3
+      user-11 registered in 206 805 ms. Reconnect count: 2
+      user-12 registered in 10 551 ms. Reconnect count: 2
+      user-14 registered in 8 570 ms. Reconnect count: 1
+      user-13 registered in 77 575 ms. Reconnect count: 1
+      user-15 failed to register. Reconnect count: 1
+
+      Registration time on average: 31 s
+      Reconnect count on average: 1.8125
+      Registration failed for 1 users
+
+      There were 5 message ID anomalies!      There were 5 timestamp anomalies!
+
+
+We still had a lot of ECONREFUSED errors

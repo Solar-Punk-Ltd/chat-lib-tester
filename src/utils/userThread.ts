@@ -13,6 +13,7 @@ const {
     address, 
     privateKey, 
     node,
+    nodeList,
     usersFeedTimeout,
     stamp, 
     username
@@ -59,6 +60,9 @@ parentPort.postMessage({                                                        
 
 // Send messages
 for (let i = 0; i < params.totalMessageCount; i++) {
+    const nodeIndex = Math.floor(Math.random() * nodeList.length);
+    chat.changeBeeUrl(nodeList[nodeIndex].url);
+
     if (!chat.isRegistered(address)) {                                                  // Re-register, if not on users list
         await sleep(params.registrationInterval);                                       // Protect agains overload
         if (!chat.isRegistered(address)) {
@@ -66,7 +70,7 @@ for (let i = 0; i < params.totalMessageCount; i++) {
             await chat.registerUser(topic, { 
                 participant: address as EthAddress,
                 key: privateKey,
-                stamp: stamp,
+                stamp: nodeList[nodeIndex].stamp,
                 nickName: username
             });
             parentPort.postMessage({                                                    // Signal to main thread that reconnect is happening
@@ -89,7 +93,7 @@ for (let i = 0; i < params.totalMessageCount; i++) {
         address,
         topic,
         messageObj,
-        stamp,
+        nodeList[nodeIndex].stamp,
         privateKey
     );
     parentPort.postMessage({                                                            // Signal to main thread that a message was sent

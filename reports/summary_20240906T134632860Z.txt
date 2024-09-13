@@ -1,0 +1,52 @@
+--- Input Summary ---
+    User Count: 21
+    Message Frequency: 2000 milliseconds
+    Registration Interval: 10000 milliseconds
+    Total message count (per user): 10
+    UsersFeed write timeout: 20000 milliseconds
+
+--- Node List ---
+    URL: http://161.97.125.121:1733, Stamp: 52d503ddfe75c71c27accc6396a2748b83d4b2ee05529ec259d8859b5a25bfce
+    URL: http://161.97.125.121:1833, Stamp: 09956719ed0fe9667bf686b858cd9125d07db3507d07b8cb0a344cc0fe463703
+    URL: http://161.97.125.121:2033, Stamp: 8ddd893c2fc469f314a0a573704cdc42324117d3701f97e4c24084aed14ee356
+    URL: http://161.97.125.121:2133, Stamp: ba90213186bb7ef4ef4e173b81c172f0b5e7dc5beed7efa77d5400005b23f076
+    URL: http://161.97.125.121:2233, Stamp: bb51298fffbc66aeaa31e1437b700efb8ed98ca18c889f9b87558362e8f300be
+    URL: http://161.97.125.121:2333, Stamp: 312dba850db5196d2288196cb7607d22ce04fe449c7731b2f165ce7311930eaf
+    URL: http://161.97.125.121:2433, Stamp: 781b39217a0d2279d1d3bc86c5963425a95f504b5753215325c1129a1d3ec8f0
+
+    Total node count: 7
+
+
+--- Test Summary ---
+
+  -- Message Stats --
+    Average transmission time: 16 s
+    TOTAL RECEIVED / TOTAL SENT: 89 / 143
+
+  -- User Stats --
+      user-0 registered in 9 315 ms. Reconnect count: 0
+      user-1 registered in 7 804 ms. Reconnect count: 1
+      user-2 registered in 80 070 ms. Reconnect count: 3
+      user-3 registered in 9 478 ms. Reconnect count: 1
+      user-4 registered in 11 271 ms. Reconnect count: 1
+      user-7 registered in 14 688 ms. Reconnect count: 2
+      user-8 registered in 23 063 ms. Reconnect count: 2
+      user-9 registered in 72 005 ms. Reconnect count: 3
+      user-10 registered in 81 531 ms. Reconnect count: 8
+      user-11 registered in 22 879 ms. Reconnect count: 10
+      user-14 registered in 16 876 ms. Reconnect count: 6
+      user-15 registered in 21 063 ms. Reconnect count: 7
+      user-16 registered in 80 010 ms. Reconnect count: 8
+      user-17 failed to register. Reconnect count: 7
+      user-5 failed to register. Reconnect count: 1
+      user-18 registered in 49 889 ms. Reconnect count: 8
+      user-6 failed to register. Reconnect count: 1
+      user-12 failed to register. Reconnect count: 0
+      user-13 failed to register. Reconnect count: 0
+      user-19 failed to register. Reconnect count: 0
+      user-20 failed to register. Reconnect count: 0
+
+      Registration time on average: 35 s
+      Reconnect count on average: 3.2857142857142856
+      Registration failed for 7 users
+

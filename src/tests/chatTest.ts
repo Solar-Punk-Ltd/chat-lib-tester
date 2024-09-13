@@ -21,14 +21,14 @@ const __dirname = path.dirname(__filename);
 
 
 const nodeList: NodeListElement[] = [
-    { url: "http://161.97.125.121:1733" , stamp: "52d503ddfe75c71c27accc6396a2748b83d4b2ee05529ec259d8859b5a25bfce" as BatchId },
-/*    { url: "http://161.97.125.121:1833" , stamp: "12a0b84868322d72ffc29da6ef349d88906b3726c0b8e270953ae08a19564481" as BatchId },
-    { url: "http://161.97.125.121:2033" , stamp: "1ac621d13a31581b30473ccaad2e7732bf1e9d532221617919f392e2673f40f2" as BatchId },
-    { url: "http://161.97.125.121:2133" , stamp: "108246a818223087d419bbde9da514806f57672b3ee649d4f4f18ea922258115" as BatchId },
-    { url: "http://161.97.125.121:2233" , stamp: "f4a05c6299d510fa1d9880c7cb24440889f03f8d21543e9bbf95e4f0e1f7957b" as BatchId },
-    { url: "http://161.97.125.121:2333" , stamp: "d8f621e85875710a7ae8eec5409e87c58c872a016a3cfea329ce61280f961e97" as BatchId },
-    { url: "http://161.97.125.121:2433" , stamp: "36d3483b9a643e777b8a85c4636dc76a4fb93476087385f29f00f14783a21455" as BatchId },
-    //    { url: "http://195.88.57.155:1633" ,  stamp: "b4fe81362508d9405e8f67f319e3feb715fb7bef7d2bf14dda046e8f9c3aafbc" as BatchId },*/
+    { url: "http://161.97.125.121:1733" , stamp: "22f189ea0fd9ee878275effa117f24e8d127162d58bf7a32da790eb6e454880d" as BatchId },
+    { url: "http://161.97.125.121:1833" , stamp: "29644f86cf8624bbc8c60fc27415531053b248cc5b85137775c4c0c61c6cec55" as BatchId },
+    //{ url: "http://161.97.125.121:2033" , stamp: "853b2ba750104ad22bd243779750d31492023a6217c69fa2408d034d8b4b2c56" as BatchId },
+    //{ url: "http://161.97.125.121:2133" , stamp: "6ca7647e9887386f89e93217d68abd3c6c172ed232bb4fbe39527a1090ed6779" as BatchId },
+    //{ url: "http://161.97.125.121:2233" , stamp: "4dec689f3ff1d3af52d9fadd33c44f2eb06f755468e546505a04d9f67317390c" as BatchId },
+    //{ url: "http://161.97.125.121:2333" , stamp: "7e135a60a2ce6984724ce23a4e64c491acb8bf9d55cd5bb0dd3a2e4d19c05a02" as BatchId },
+    //{ url: "http://161.97.125.121:2433" , stamp: "feef29cbc85dc218a38716f753f0a0d381411a2b4c2b00d4f1be275479c4743d" as BatchId },
+    //{ url: "http://195.88.57.155:1633" ,  stamp: "6e26e6c31623bfcfa1df4140a98286cd27bcd84c628d6fafd63757ba8d706a6c" as BatchId },
 ];
 
 let messages: MessageData[] = [];
@@ -62,7 +62,7 @@ export async function startChatTest() {
 
     // Create the chat room
     logger.info("Creating chat room...");
-    const chat = new SwarmChat({ url: nodeList[0].url, usersFeedTimeout, logLevel: "warn", idleTime: 10 * 60 * 1000 });
+    const chat = new SwarmChat({ url: nodeList[0].url, logLevel: "warn", idleTime: 10 * 60 * 1000 });
     chat.initChatRoom(topic, nodeList[0].stamp);
     startTime = Date.now();
     logger.info(`Done! Now we will wait ${params.registrationInterval} ms before starting registration. \n`);
@@ -96,6 +96,7 @@ export async function startChatTest() {
                 address: walletList[i].address,
                 privateKey: walletList[i].privateKey,
                 node: nodeList[nodeIndex].url,
+                nodeList: nodeList,
                 usersFeedTimeout,
                 stamp: nodeList[nodeIndex].stamp,
                 username: `user-${i}`

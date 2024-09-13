@@ -1,0 +1,32 @@
+--- Input Summary ---
+    User Count: 32
+    Message Frequency: 2000 milliseconds
+    Registration Interval: 15000 milliseconds
+    Total message count (per user): 20
+    UsersFeed write timeout: 20000 milliseconds
+
+--- Node List ---
+    URL: http://161.97.125.121:1733, Stamp: 9a478f8f6ac0f2882654a1b81680ee021fbc8bcb5280d5342326d1d766b085fa
+    URL: http://161.97.125.121:1833, Stamp: 29644f86cf8624bbc8c60fc27415531053b248cc5b85137775c4c0c61c6cec55
+    URL: http://161.97.125.121:2033, Stamp: 853b2ba750104ad22bd243779750d31492023a6217c69fa2408d034d8b4b2c56
+    URL: http://161.97.125.121:2133, Stamp: 6ca7647e9887386f89e93217d68abd3c6c172ed232bb4fbe39527a1090ed6779
+    URL: http://161.97.125.121:2233, Stamp: 4dec689f3ff1d3af52d9fadd33c44f2eb06f755468e546505a04d9f67317390c
+    URL: http://161.97.125.121:2333, Stamp: 7e135a60a2ce6984724ce23a4e64c491acb8bf9d55cd5bb0dd3a2e4d19c05a02
+    URL: http://161.97.125.121:2433, Stamp: feef29cbc85dc218a38716f753f0a0d381411a2b4c2b00d4f1be275479c4743d
+    URL: http://195.88.57.155:1633, Stamp: 6e26e6c31623bfcfa1df4140a98286cd27bcd84c628d6fafd63757ba8d706a6c
+
+    Total node count: 8
+
+[ABORTED]
+
+Still a lot of errors like this:
+
+[2024-09-12 19:37:22.825 +0200] ERROR: Error in uploadObjectToBee: Request failed with status code 404
+[2024-09-12 19:37:22.830 +0200] ERROR: Error on the instance of user-15: Error: Request failed with status code 404
+[2024-09-12 19:37:22.829 +0200] ERROR: Error in writeUsersFeedCommit: Could not upload user list to bee
+[2024-09-12 19:37:22.832 +0200] ERROR: Error on the instance of user-15: Error: Could not upload user list to bee
+
+[2024-09-12 19:37:34.629 +0200] ERROR: Error in getNewUsers: connect ETIMEDOUT 161.97.125.121:2333
+[2024-09-12 19:37:34.633 +0200] ERROR: Error on the instance of user-7: Error: connect ETIMEDOUT 161.97.125.121:2333
+[2024-09-12 19:37:34.658 +0200] ERROR: Error on the instance of user-7: Error: connect ETIMEDOUT 161.97.125.121:2333
+[2024-09-12 19:37:34.653 +0200] ERROR: Error in readMessage: connect ETIMEDOUT 161.97.125.121:2333
