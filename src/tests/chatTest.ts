@@ -21,13 +21,13 @@ const __dirname = path.dirname(__filename);
 
 
 const nodeList: NodeListElement[] = [
-    { url: "http://161.97.125.121:1733" , stamp: "22f189ea0fd9ee878275effa117f24e8d127162d58bf7a32da790eb6e454880d" as BatchId },
-    { url: "http://161.97.125.121:1833" , stamp: "29644f86cf8624bbc8c60fc27415531053b248cc5b85137775c4c0c61c6cec55" as BatchId },
+    //{ url: "http://161.97.125.121:1733" , stamp: "22f189ea0fd9ee878275effa117f24e8d127162d58bf7a32da790eb6e454880d" as BatchId },
+    //{ url: "http://161.97.125.121:1833" , stamp: "29644f86cf8624bbc8c60fc27415531053b248cc5b85137775c4c0c61c6cec55" as BatchId },
     //{ url: "http://161.97.125.121:2033" , stamp: "853b2ba750104ad22bd243779750d31492023a6217c69fa2408d034d8b4b2c56" as BatchId },
     //{ url: "http://161.97.125.121:2133" , stamp: "6ca7647e9887386f89e93217d68abd3c6c172ed232bb4fbe39527a1090ed6779" as BatchId },
     //{ url: "http://161.97.125.121:2233" , stamp: "4dec689f3ff1d3af52d9fadd33c44f2eb06f755468e546505a04d9f67317390c" as BatchId },
     //{ url: "http://161.97.125.121:2333" , stamp: "7e135a60a2ce6984724ce23a4e64c491acb8bf9d55cd5bb0dd3a2e4d19c05a02" as BatchId },
-    //{ url: "http://161.97.125.121:2433" , stamp: "feef29cbc85dc218a38716f753f0a0d381411a2b4c2b00d4f1be275479c4743d" as BatchId },
+    { url: "http://161.97.125.121:2433" , stamp: "5596455deee29df5dc2644ecfc6afb147d7382e07c550e9b10d30ea20b88fcc7" as BatchId },
     //{ url: "http://195.88.57.155:1633" ,  stamp: "6e26e6c31623bfcfa1df4140a98286cd27bcd84c628d6fafd63757ba8d706a6c" as BatchId },
 ];
 
@@ -63,7 +63,7 @@ export async function startChatTest() {
     // Create the chat room
     logger.info("Creating chat room...");
     const chat = new SwarmChat({ url: nodeList[0].url, logLevel: "warn", idleTime: 10 * 60 * 1000 });
-    chat.initChatRoom(topic, nodeList[0].stamp);
+    chat.initChatRoom(topic, nodeList[0].stamp, "86d2154575a43f3bf9922d9c52f0a63daca1cf352d57ef2b5027e38bc8d8f272");
     startTime = Date.now();
     logger.info(`Done! Now we will wait ${params.registrationInterval} ms before starting registration. \n`);
     await sleep(params.registrationInterval);
